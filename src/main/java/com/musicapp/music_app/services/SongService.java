@@ -6,15 +6,16 @@ import com.musicapp.music_app.repositories.SongRepository;
 import com.musicapp.music_app.utils.EncryptionManagement;
 import com.musicapp.music_app.utils.FileManagementUtility;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.SecretKey;
 import java.io.InputStream;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.nio.file.Path;
+import java.util.*;
 
 @Service
 public class SongService {
@@ -46,7 +47,7 @@ public class SongService {
         return songRepository.save(song);
     }
 
-    public byte[] getDecryptedSongById(String songId) throws Exception {
+    public HashMap<String, Object> getDecryptedSongById(String songId) throws Exception {
         Optional<Song> optionalSong = songRepository.findById(songId);
         if (optionalSong.isEmpty()) {
             return null; // Return null if the song is not found
@@ -59,7 +60,21 @@ public class SongService {
         SecretKey encryptionKey = EncryptionManagement.getSecretKeyFromBase64(encryptionKeyBase64);
 
         // Decrypt the song file using the encryption key
-        return EncryptionManagement.decryptFile(song.getFilePath(), encryptionKey);
+        byte[] decryptedData = EncryptionManagement.decryptFile(song.getFilePath(), encryptionKey);
+
+        String originalFilename = song.getOriginalName();
+        String originalExtension = song.getFileExtension();
+        String decryptedFilename = originalFilename + "." + originalExtension;
+        Path decryptedFilePath = Path.of("decrypted_files", decryptedFilename);
+
+        // Prepare the ByteArrayResource to send back the decrypted file as a blob
+        ByteArrayResource resource = new ByteArrayResource(decryptedData);
+
+        // Return the decrypted file as a response entity with the appropriate headers
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("filename", decryptedFilename);
+        map.put("file", resource);
+        return map;
     }
 
 }

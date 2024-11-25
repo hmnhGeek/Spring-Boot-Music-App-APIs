@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/songs")
@@ -51,19 +55,25 @@ public class SongController {
             @ApiResponse(responseCode = "404", description = "Song not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the song")
     })
-    @GetMapping(value = "/{id}/decrypt", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/{id}/decrypt", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<?> getSongByIdAndDecrypt(@PathVariable("id") String songId) {
         try {
             // Delegate to service for retrieving and decrypting the song
-            byte[] decryptedMusicFile = songService.getDecryptedSongById(songId);
+            HashMap<String, Object> decryptedMusicFile = songService.getDecryptedSongById(songId);
 
             if (decryptedMusicFile == null) {
                 return new ResponseEntity<>("Song not found or decryption failed", HttpStatus.NOT_FOUND);
             }
 
+//            // Set the response headers to provide the filename and force download in the frontend
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + decryptedMusicFile.get("filename") + "\"");
+//            headers.add(HttpHeaders.CONTENT_TYPE, "application/octet-stream");
+
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(decryptedMusicFile);
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + decryptedMusicFile.get("filename") + "\"") // Set appropriate filename here
+                    .body(decryptedMusicFile.get("file"));
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
