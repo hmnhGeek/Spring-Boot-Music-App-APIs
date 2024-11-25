@@ -36,7 +36,7 @@ public class SongController {
     ) {
         try {
             // Call the service method to upload and encrypt the song and cover image
-            Song savedSong = songService.uploadAndEncryptSong(songFilePath.getInputStream(), coverImagePath.getInputStream());
+            Song savedSong = songService.uploadAndEncryptSong(songFilePath, coverImagePath);
             return new ResponseEntity<>(savedSong, HttpStatus.CREATED);
         } catch (Exception e) {
             System.out.println(e.getMessage());

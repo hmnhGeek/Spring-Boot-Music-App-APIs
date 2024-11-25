@@ -28,4 +28,16 @@ public class Song {
 
     @Field("encryption_key")
     private String encryptionKey;
+
+    @Field("file_extension")
+    private String fileExtension;
+
+    @Field("cover_image_extension")
+    private String coverImageExtension;
+
+    @Field("original_name")
+    private String originalName;
+
+    @Field("original_cover_image_name")
+    private String originalCoverImageName;
 }
