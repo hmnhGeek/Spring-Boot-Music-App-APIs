@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.io.InputStream;
 import java.util.Base64;
+import java.util.Optional;
 
 @Service
 public class SongService {
@@ -34,6 +35,20 @@ public class SongService {
         return songRepository.save(song);
     }
 
+    public byte[] getDecryptedSongById(String songId) throws Exception {
+        Optional<Song> optionalSong = songRepository.findById(songId);
+        if (!optionalSong.isPresent()) {
+            return null; // Return null if the song is not found
+        }
 
+        Song song = optionalSong.get();
+
+        // Decode the encryption key
+        String encryptionKeyBase64 = song.getEncryptionKey();
+        SecretKey encryptionKey = EncryptionManagement.getSecretKeyFromBase64(encryptionKeyBase64);
+
+        // Decrypt the song file using the encryption key
+        return EncryptionManagement.decryptFile(song.getFilePath(), encryptionKey);
+    }
 
 }

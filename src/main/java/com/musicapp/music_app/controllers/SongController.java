@@ -44,4 +44,30 @@ public class SongController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @Operation(summary = "Retrieve and decrypt a song by its MongoDB ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Song retrieved and decrypted successfully"),
+            @ApiResponse(responseCode = "404", description = "Song not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the song")
+    })
+    @GetMapping(value = "/{id}/decrypt", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getSongByIdAndDecrypt(@PathVariable("id") String songId) {
+        try {
+            // Delegate to service for retrieving and decrypting the song
+            byte[] decryptedMusicFile = songService.getDecryptedSongById(songId);
+
+            if (decryptedMusicFile == null) {
+                return new ResponseEntity<>("Song not found or decryption failed", HttpStatus.NOT_FOUND);
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(decryptedMusicFile);
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

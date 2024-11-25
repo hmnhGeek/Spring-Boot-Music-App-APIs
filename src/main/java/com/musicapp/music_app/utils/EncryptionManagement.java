@@ -3,11 +3,14 @@ package com.musicapp.music_app.utils;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 
 public class EncryptionManagement {
     private static final String ENCRYPTION_ALGORITHM = "AES";
@@ -94,5 +97,37 @@ public class EncryptionManagement {
         Path filePath = Paths.get(folder, fileNameWithExtension);
         encryptAndSaveFile(fileInputStream, filePath.toFile(), key);
         return filePath.toString();
+    }
+
+    public static SecretKey getSecretKeyFromBase64(String base64Key) {
+        byte[] decodedKey = Base64.getDecoder().decode(base64Key);
+        return new javax.crypto.spec.SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+    }
+
+    public static byte[] decryptFile(String encryptedFilePath, SecretKey key) throws Exception {
+        Path path = Path.of(encryptedFilePath);
+        try (InputStream fileInputStream = Files.newInputStream(path)) {
+            Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
+            cipher.init(Cipher.DECRYPT_MODE, key);
+            return decryptAndGetBytes(fileInputStream, cipher);
+        }
+    }
+
+    private static byte[] decryptAndGetBytes(InputStream inputStream, Cipher cipher) throws Exception {
+        byte[] buffer = new byte[1024];
+        int bytesRead;
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                byte[] decrypted = cipher.update(buffer, 0, bytesRead);
+                if (decrypted != null) {
+                    outputStream.write(decrypted);
+                }
+            }
+            byte[] finalBytes = cipher.doFinal();
+            if (finalBytes != null) {
+                outputStream.write(finalBytes);
+            }
+            return outputStream.toByteArray();
+        }
     }
 }
