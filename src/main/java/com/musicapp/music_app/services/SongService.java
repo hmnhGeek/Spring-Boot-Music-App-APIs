@@ -1,6 +1,7 @@
 package com.musicapp.music_app.services;
 
 import DTOs.requests.SongUploadRequestDTO;
+import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.repositories.SongRepository;
 import com.musicapp.music_app.utils.EncryptionManagement;
@@ -16,6 +17,7 @@ import javax.crypto.SecretKey;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class SongService {
@@ -103,6 +105,17 @@ public class SongService {
         map.put("filename", decryptedFilename);
         map.put("file", resource);
         return map;
+    }
+
+    public List<SongsListItem> getSongsList() {
+        List<Song> songs = songRepository.findAll();
+        List<SongsListItem> songsListItemList = songs.stream().map(x -> {
+            SongsListItem songsListItem = new SongsListItem();
+            songsListItem.setId(x.getId());
+            songsListItem.setOriginalName(x.getOriginalName());
+            return songsListItem;
+        }).toList();
+        return songsListItemList;
     }
 
 }

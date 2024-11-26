@@ -1,6 +1,7 @@
 package com.musicapp.music_app.controllers;
 
 import DTOs.requests.SongUploadRequestDTO;
+import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.services.SongService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 @RestController
@@ -98,6 +100,27 @@ public class SongController {
                     .body(decryptedMusicFile.get("file"));
 
         } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Operation(summary = "Retrieve list of songs stored in the database")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Song list retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Song list not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while fetching song list")
+    })
+    @GetMapping(value = "/get-song-list")
+    public ResponseEntity<List<SongsListItem>> getSongsList() {
+        try {
+            List<SongsListItem> songsList = songService.getSongsList();
+            if (songsList == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            return ResponseEntity.ok().body(songsList);
+        }
+        catch (Exception e) {
             System.out.println(e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
