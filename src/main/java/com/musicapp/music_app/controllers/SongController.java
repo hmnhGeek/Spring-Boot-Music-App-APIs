@@ -49,13 +49,40 @@ public class SongController {
         }
     }
 
+    @Operation(summary = "Retrieve and decrypt a song cover image by its MongoDB ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cover image retrieved and decrypted successfully"),
+            @ApiResponse(responseCode = "404", description = "Cover image not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the cover image")
+    })
+    @GetMapping(value = "/get-song-cover-image/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<?> getSongCoverImageByIdAndDecrypt(@PathVariable("id") String songId) {
+        try {
+            // Delegate to service for retrieving and decrypting the cover image
+            HashMap<String, Object> decryptedMusicFile = songService.getDecryptedSongCoverById(songId);
+
+            if (decryptedMusicFile == null) {
+                return new ResponseEntity<>("Cover image not found or decryption failed", HttpStatus.NOT_FOUND);
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + decryptedMusicFile.get("filename") + "\"") // Set appropriate filename here
+                    .body(decryptedMusicFile.get("file"));
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @Operation(summary = "Retrieve and decrypt a song by its MongoDB ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Song retrieved and decrypted successfully"),
             @ApiResponse(responseCode = "404", description = "Song not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the song")
     })
-    @GetMapping(value = "/{id}/decrypt", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping(value = "/get-song/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<?> getSongByIdAndDecrypt(@PathVariable("id") String songId) {
         try {
             // Delegate to service for retrieving and decrypting the song
@@ -64,11 +91,6 @@ public class SongController {
             if (decryptedMusicFile == null) {
                 return new ResponseEntity<>("Song not found or decryption failed", HttpStatus.NOT_FOUND);
             }
-
-//            // Set the response headers to provide the filename and force download in the frontend
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + decryptedMusicFile.get("filename") + "\"");
-//            headers.add(HttpHeaders.CONTENT_TYPE, "application/octet-stream");
 
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)

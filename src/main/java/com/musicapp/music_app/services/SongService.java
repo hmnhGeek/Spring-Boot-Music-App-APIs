@@ -47,6 +47,35 @@ public class SongService {
         return songRepository.save(song);
     }
 
+    public HashMap<String, Object> getDecryptedSongCoverById(String songId) throws Exception {
+        Optional<Song> optionalSong = songRepository.findById(songId);
+        if (optionalSong.isEmpty()) {
+            return null; // Return null if the song is not found
+        }
+
+        Song song = optionalSong.get();
+
+        // Decode the encryption key
+        String encryptionKeyBase64 = song.getEncryptionKey();
+        SecretKey encryptionKey = EncryptionManagement.getSecretKeyFromBase64(encryptionKeyBase64);
+
+        // Decrypt the song file using the encryption key
+        byte[] decryptedData = EncryptionManagement.decryptFile(song.getCoverImagePath(), encryptionKey);
+
+        String originalFilename = song.getOriginalCoverImageName();
+        String originalExtension = song.getCoverImageExtension();
+        String decryptedFilename = originalFilename + "." + originalExtension;
+
+        // Prepare the ByteArrayResource to send back the decrypted file as a blob
+        ByteArrayResource resource = new ByteArrayResource(decryptedData);
+
+        // Return the decrypted file as a response entity with the appropriate headers
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("filename", decryptedFilename);
+        map.put("file", resource);
+        return map;
+    }
+
     public HashMap<String, Object> getDecryptedSongById(String songId) throws Exception {
         Optional<Song> optionalSong = songRepository.findById(songId);
         if (optionalSong.isEmpty()) {
@@ -65,7 +94,6 @@ public class SongService {
         String originalFilename = song.getOriginalName();
         String originalExtension = song.getFileExtension();
         String decryptedFilename = originalFilename + "." + originalExtension;
-        Path decryptedFilePath = Path.of("decrypted_files", decryptedFilename);
 
         // Prepare the ByteArrayResource to send back the decrypted file as a blob
         ByteArrayResource resource = new ByteArrayResource(decryptedData);
