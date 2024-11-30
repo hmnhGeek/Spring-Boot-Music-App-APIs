@@ -40,4 +40,7 @@ public class Song {
 
     @Field("original_cover_image_name")
     private String originalCoverImageName;
+
+    @Field("vault_protected")
+    private boolean vaultProtected;
 }

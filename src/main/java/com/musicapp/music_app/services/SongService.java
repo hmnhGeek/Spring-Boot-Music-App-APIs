@@ -108,7 +108,7 @@ public class SongService {
     }
 
     public List<SongsListItem> getSongsList() {
-        List<Song> songs = songRepository.findAll();
+        List<Song> songs = songRepository.findAllNonProtectedSongs();
         List<SongsListItem> songsListItemList = songs.stream().map(x -> {
             SongsListItem songsListItem = new SongsListItem();
             songsListItem.setId(x.getId());
