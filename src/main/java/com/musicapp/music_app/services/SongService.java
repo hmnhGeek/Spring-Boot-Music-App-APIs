@@ -3,6 +3,7 @@ package com.musicapp.music_app.services;
 import DTOs.requests.SongUploadRequestDTO;
 import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Song;
+import com.musicapp.music_app.repositories.CustomSongRepositoryImpl;
 import com.musicapp.music_app.repositories.SongRepository;
 import com.musicapp.music_app.utils.EncryptionManagement;
 import com.musicapp.music_app.utils.FileManagementUtility;
@@ -23,6 +24,9 @@ import java.util.stream.Collectors;
 public class SongService {
     @Autowired
     private SongRepository songRepository;
+
+    @Autowired
+    private CustomSongRepositoryImpl customSongRepositoryImpl;
 
     private static final String MUSIC_FOLDER = "music";
     private static final String COVERS_FOLDER = "covers";
@@ -116,6 +120,10 @@ public class SongService {
             return songsListItem;
         }).toList();
         return songsListItemList;
+    }
+
+    public void updateVaultProtected(String id, boolean vaultProtected) {
+        customSongRepositoryImpl.updateVaultProtectedFlag(id, vaultProtected);
     }
 
 }

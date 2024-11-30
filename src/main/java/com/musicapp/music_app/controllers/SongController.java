@@ -125,4 +125,32 @@ public class SongController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @Operation(summary = "Update the vault_protected flag for a specific song by its ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Vault protected flag updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Song not found or update failed"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while updating the flag")
+    })
+    @PutMapping("/update-protection-policy/{id}")
+    public ResponseEntity<String> updateVaultProtectedFlag(
+            @PathVariable("id") String songId,
+            @RequestParam boolean vaultProtected) {
+        try {
+            // Call the service method to update the vault_protected flag
+            songService.updateVaultProtected(songId, vaultProtected);
+
+            // Respond with a success message
+            return new ResponseEntity<>("Vault protected flag updated successfully", HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            // Handle case where the song ID is invalid or update fails
+            return new ResponseEntity<>("Song not found or update failed", HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            // Handle unexpected exceptions
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 }
