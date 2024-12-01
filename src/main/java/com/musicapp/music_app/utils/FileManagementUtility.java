@@ -23,4 +23,31 @@ public class FileManagementUtility {
 
         return Arrays.asList(baseName, extension);
     }
+
+    public static boolean deleteFile(String filePath) {
+        try {
+            Path path = Paths.get(filePath);
+            if (Files.exists(path)) {
+                Files.delete(path);
+                return true; // File deleted successfully
+            } else {
+                System.err.println("File not found: " + filePath);
+                return false; // File does not exist
+            }
+        } catch (Exception e) {
+            System.err.println("Error deleting file: " + filePath + " - " + e.getMessage());
+            return false; // Error occurred during file deletion
+        }
+    }
+
+    public static boolean deleteFiles(String... filePaths) {
+        boolean allDeleted = true;
+        for (String filePath : filePaths) {
+            boolean deleted = deleteFile(filePath);
+            if (!deleted) {
+                allDeleted = false; // At least one file failed to delete
+            }
+        }
+        return allDeleted; // Return true only if all files were successfully deleted
+    }
 }

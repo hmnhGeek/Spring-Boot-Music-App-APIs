@@ -151,4 +151,30 @@ public class SongService {
         customSongRepositoryImpl.updateVaultProtectedFlag(id, vaultProtected);
     }
 
+    public boolean deleteSongById(String songId) {
+        try {
+            Optional<Song> optionalSong = songRepository.findById(songId);
+            if (optionalSong.isEmpty()) {
+                return false; // Song not found
+            }
+
+            Song song = optionalSong.get();
+
+            // Delete song and cover image files
+            boolean filesDeleted = FileManagementUtility.deleteFiles(song.getFilePath(), song.getCoverImagePath());
+
+            if (!filesDeleted) {
+                System.err.println("Some files could not be deleted for song ID: " + songId);
+            }
+
+            // Delete the database record
+            songRepository.delete(song);
+
+            return filesDeleted; // Return the status of file deletion
+        } catch (Exception e) {
+            System.err.println("Error deleting song: " + e.getMessage());
+            return false; // Deletion failed
+        }
+    }
+
 }

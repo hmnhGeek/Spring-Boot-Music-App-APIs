@@ -152,5 +152,26 @@ public class SongController {
         }
     }
 
+    @Operation(summary = "Delete a song by its ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Song deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Song not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while deleting the song")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteSongById(@PathVariable("id") String songId) {
+        try {
+            boolean isDeleted = songService.deleteSongById(songId);
+
+            if (isDeleted) {
+                return new ResponseEntity<>("Song deleted successfully", HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("Song not found", HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 }
