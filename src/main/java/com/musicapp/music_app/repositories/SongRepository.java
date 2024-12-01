@@ -9,4 +9,7 @@ import java.util.List;
 public interface SongRepository extends MongoRepository<Song, String> {
     @Query("{ 'vault_protected': false }")
     public List<Song> findAllNonProtectedSongs();
+
+    @Query("{ 'vault_protected': true }")
+    public List<Song> findAllProtectedSongs();
 }

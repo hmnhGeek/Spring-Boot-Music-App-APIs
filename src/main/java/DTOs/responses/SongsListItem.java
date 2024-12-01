@@ -6,4 +6,5 @@ import lombok.Data;
 public class SongsListItem {
     private String id;
     private String originalName;
+    private String coverImageData;
 }

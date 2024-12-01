@@ -111,16 +111,41 @@ public class SongService {
         return map;
     }
 
-    public List<SongsListItem> getSongsList() {
-        List<Song> songs = songRepository.findAllNonProtectedSongs();
-        List<SongsListItem> songsListItemList = songs.stream().map(x -> {
+    public List<SongsListItem> getSongsList(boolean vaultProtected) {
+        List<Song> songs;
+        if(!vaultProtected) {
+            songs = songRepository.findAllNonProtectedSongs();
+        }
+        else {
+            songs = songRepository.findAllProtectedSongs();
+        }
+        List<SongsListItem> songsListItemList = songs.stream().map(song -> {
             SongsListItem songsListItem = new SongsListItem();
-            songsListItem.setId(x.getId());
-            songsListItem.setOriginalName(x.getOriginalName());
+            songsListItem.setId(song.getId());
+            songsListItem.setOriginalName(song.getOriginalName());
+
+            try {
+                // Get the decrypted cover image for each song (without modifying getDecryptedSongCoverById logic)
+                HashMap<String, Object> coverImageData = getDecryptedSongCoverById(song.getId());
+                if (coverImageData != null) {
+                    // Retrieve the decrypted cover image as a byte array
+                    ByteArrayResource coverImageResource = (ByteArrayResource) coverImageData.get("file");
+                    byte[] coverImageBytes = coverImageResource.getByteArray();
+
+                    // Convert byte array to Base64 string
+                    String base64CoverImage = Base64.getEncoder().encodeToString(coverImageBytes);
+                    songsListItem.setCoverImageData(base64CoverImage);
+                }
+            } catch (Exception e) {
+                e.printStackTrace(); // Handle the error if necessary
+            }
+
             return songsListItem;
-        }).toList();
+        }).collect(Collectors.toList());
+
         return songsListItemList;
     }
+
 
     public void updateVaultProtected(String id, boolean vaultProtected) {
         customSongRepositoryImpl.updateVaultProtectedFlag(id, vaultProtected);

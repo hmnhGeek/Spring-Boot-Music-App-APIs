@@ -112,9 +112,9 @@ public class SongController {
             @ApiResponse(responseCode = "500", description = "Internal server error while fetching song list")
     })
     @GetMapping(value = "/get-song-list")
-    public ResponseEntity<List<SongsListItem>> getSongsList() {
+    public ResponseEntity<List<SongsListItem>> getSongsList(@RequestParam boolean vaultProtected) {
         try {
-            List<SongsListItem> songsList = songService.getSongsList();
+            List<SongsListItem> songsList = songService.getSongsList(vaultProtected);
             if (songsList == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
