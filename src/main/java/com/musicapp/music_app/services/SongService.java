@@ -9,6 +9,8 @@ import com.musicapp.music_app.utils.EncryptionManagement;
 import com.musicapp.music_app.utils.FileManagementUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -111,21 +113,24 @@ public class SongService {
         return map;
     }
 
-    public List<SongsListItem> getSongsList(boolean vaultProtected) {
-        List<Song> songs;
-        if(!vaultProtected) {
-            songs = songRepository.findAllNonProtectedSongs();
+    public List<SongsListItem> getSongsList(boolean vaultProtected, Pageable pageable) {
+        Page<Song> songsPage;
+
+        // Fetch paginated songs based on the vaultProtected flag
+        if (!vaultProtected) {
+            songsPage = songRepository.findAllNonProtectedSongs(pageable);
+        } else {
+            songsPage = songRepository.findAllProtectedSongs(pageable);
         }
-        else {
-            songs = songRepository.findAllProtectedSongs();
-        }
-        List<SongsListItem> songsListItemList = songs.stream().map(song -> {
+
+        // Map the paginated songs to SongsListItem objects
+        return songsPage.stream().map(song -> {
             SongsListItem songsListItem = new SongsListItem();
             songsListItem.setId(song.getId());
             songsListItem.setOriginalName(song.getOriginalName());
 
             try {
-                // Get the decrypted cover image for each song (without modifying getDecryptedSongCoverById logic)
+                // Get the decrypted cover image for each song
                 HashMap<String, Object> coverImageData = getDecryptedSongCoverById(song.getId());
                 if (coverImageData != null) {
                     // Retrieve the decrypted cover image as a byte array
@@ -142,8 +147,6 @@ public class SongService {
 
             return songsListItem;
         }).collect(Collectors.toList());
-
-        return songsListItemList;
     }
 
 

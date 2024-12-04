@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -105,22 +107,31 @@ public class SongController {
         }
     }
 
-    @Operation(summary = "Retrieve list of songs stored in the database")
+    @Operation(summary = "Retrieve paginated list of songs stored in the database")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Song list retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "Song list not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error while fetching song list")
     })
     @GetMapping(value = "/get-song-list")
-    public ResponseEntity<List<SongsListItem>> getSongsList(@RequestParam boolean vaultProtected) {
+    public ResponseEntity<List<SongsListItem>> getSongsList(
+            @RequestParam boolean vaultProtected,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size) {
         try {
-            List<SongsListItem> songsList = songService.getSongsList(vaultProtected);
-            if (songsList == null) {
+            // Create Pageable object
+            Pageable pageable = PageRequest.of(page, size);
+
+            // Fetch paginated song list
+            List<SongsListItem> songsList = songService.getSongsList(vaultProtected, pageable);
+
+            // Check if the list is empty
+            if (songsList.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
+
             return ResponseEntity.ok().body(songsList);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.out.println(e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
