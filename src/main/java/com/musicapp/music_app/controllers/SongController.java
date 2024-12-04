@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @RestController
@@ -114,7 +116,7 @@ public class SongController {
             @ApiResponse(responseCode = "500", description = "Internal server error while fetching song list")
     })
     @GetMapping(value = "/get-song-list")
-    public ResponseEntity<List<SongsListItem>> getSongsList(
+    public ResponseEntity<Map<String, Object>> getSongsList(
             @RequestParam boolean vaultProtected,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size) {
@@ -123,14 +125,21 @@ public class SongController {
             Pageable pageable = PageRequest.of(page, size);
 
             // Fetch paginated song list
-            List<SongsListItem> songsList = songService.getSongsList(vaultProtected, pageable);
+            Page<SongsListItem> songPage = songService.getSongsList(vaultProtected, pageable);
 
-            // Check if the list is empty
-            if (songsList.isEmpty()) {
+            // Check if the page is empty
+            if (songPage.getContent().isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
-            return ResponseEntity.ok().body(songsList);
+            // Prepare the response with pagination metadata
+            Map<String, Object> response = new HashMap<>();
+            response.put("content", songPage.getContent());  // List of songs
+            response.put("totalPages", songPage.getTotalPages());  // Total number of pages
+            response.put("totalElements", songPage.getTotalElements());  // Total number of songs
+            response.put("currentPage", songPage.getNumber());  // Current page index
+
+            return ResponseEntity.ok().body(response);
         } catch (Exception e) {
             System.out.println(e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

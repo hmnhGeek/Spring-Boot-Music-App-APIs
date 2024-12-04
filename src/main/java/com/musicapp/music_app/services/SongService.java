@@ -10,6 +10,7 @@ import com.musicapp.music_app.utils.FileManagementUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -113,7 +114,7 @@ public class SongService {
         return map;
     }
 
-    public List<SongsListItem> getSongsList(boolean vaultProtected, Pageable pageable) {
+    public Page<SongsListItem> getSongsList(boolean vaultProtected, Pageable pageable) {
         Page<Song> songsPage;
 
         // Fetch paginated songs based on the vaultProtected flag
@@ -124,7 +125,7 @@ public class SongService {
         }
 
         // Map the paginated songs to SongsListItem objects
-        return songsPage.stream().map(song -> {
+        List<SongsListItem> songsList = songsPage.stream().map(song -> {
             SongsListItem songsListItem = new SongsListItem();
             songsListItem.setId(song.getId());
             songsListItem.setOriginalName(song.getOriginalName());
@@ -147,7 +148,11 @@ public class SongService {
 
             return songsListItem;
         }).collect(Collectors.toList());
+
+        // Wrap the mapped list into a Page object
+        return new PageImpl<>(songsList, pageable, songsPage.getTotalElements());
     }
+
 
 
     public void updateVaultProtected(String id, boolean vaultProtected) {
