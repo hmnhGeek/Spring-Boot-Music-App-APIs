@@ -146,6 +146,29 @@ public class SongController {
         }
     }
 
+    @Operation(summary = "Retrieve paginated list of songs stored in the database")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Song list retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Song list not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while fetching song list")
+    })
+    @GetMapping(value = "/get-song-list-lite")
+    public ResponseEntity<List<SongsListItem>> getSongsListLite(@RequestParam boolean vaultProtected) {
+        try {
+            // Fetch paginated song list
+            List<SongsListItem> songsList = songService.getSongsListWithoutCoverImages(vaultProtected);
+
+            // Check if the page is empty
+            if (songsList.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            return ResponseEntity.ok().body(songsList);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @Operation(summary = "Update the vault_protected flag for a specific song by its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Vault protected flag updated successfully"),

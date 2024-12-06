@@ -153,6 +153,28 @@ public class SongService {
         return new PageImpl<>(songsList, pageable, songsPage.getTotalElements());
     }
 
+    public List<SongsListItem> getSongsListWithoutCoverImages(boolean vaultProtected) {
+        List<Song> songs;
+
+        // Fetch paginated songs based on the vaultProtected flag
+        if (!vaultProtected) {
+            songs = songRepository.findAllNonProtectedSongsWithoutCover();
+        } else {
+            songs = songRepository.findAllProtectedSongsWithoutCover();
+        }
+
+        // Map the paginated songs to SongsListItem objects
+        List<SongsListItem> songsList = songs.stream().map(song -> {
+            SongsListItem songsListItem = new SongsListItem();
+            songsListItem.setId(song.getId());
+            songsListItem.setOriginalName(song.getOriginalName());
+            return songsListItem;
+        }).collect(Collectors.toList());
+
+        // Wrap the mapped list into a Page object
+        return songsList;
+    }
+
 
 
     public void updateVaultProtected(String id, boolean vaultProtected) {

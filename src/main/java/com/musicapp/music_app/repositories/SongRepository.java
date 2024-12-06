@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
+import java.util.List;
+
 public interface SongRepository extends MongoRepository<Song, String> {
 
     @Query("{ 'vault_protected': false }")
@@ -13,4 +15,10 @@ public interface SongRepository extends MongoRepository<Song, String> {
 
     @Query("{ 'vault_protected': true }")
     Page<Song> findAllProtectedSongs(Pageable pageable);
+
+    @Query("{ 'vault_protected': false }")
+    List<Song> findAllNonProtectedSongsWithoutCover();
+
+    @Query("{ 'vault_protected': true }")
+    List<Song> findAllProtectedSongsWithoutCover();
 }
