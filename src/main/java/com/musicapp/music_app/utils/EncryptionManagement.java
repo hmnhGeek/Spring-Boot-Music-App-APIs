@@ -166,4 +166,14 @@ public class EncryptionManagement {
             return outputStream.toByteArray();
         }
     }
+
+    /**
+     * Decodes a Base64-encoded password.
+     *
+     * @param encodedPassword The Base64 encoded password.
+     * @return The decoded password as a String.
+     */
+    public static String decodeBase64(String encodedPassword) {
+        return new String(Base64.getDecoder().decode(encodedPassword));
+    }
 }
