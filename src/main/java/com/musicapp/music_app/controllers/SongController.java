@@ -1,8 +1,10 @@
 package com.musicapp.music_app.controllers;
 
+import DTOs.requests.PasswordRequestDTO;
 import DTOs.requests.SongUploadRequestDTO;
 import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Song;
+import com.musicapp.music_app.services.CredentialService;
 import com.musicapp.music_app.services.SongService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -32,6 +34,9 @@ public class SongController {
 
     @Autowired
     private SongService songService;
+
+    @Autowired
+    private CredentialService credentialService;
 
     @Operation(summary = "Upload and encrypt a song with cover image")
     @ApiResponses(value = {
@@ -117,10 +122,17 @@ public class SongController {
     })
     @GetMapping(value = "/get-song-list")
     public ResponseEntity<Map<String, Object>> getSongsList(
+            @RequestParam(defaultValue = "") String password,
             @RequestParam boolean vaultProtected,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size) {
         try {
+            PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
+            passwordRequestDTO.setEncodedPassword(password);
+            if (vaultProtected && !credentialService.isValidPassword(passwordRequestDTO)) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+
             // Create Pageable object
             Pageable pageable = PageRequest.of(page, size);
 
@@ -153,8 +165,13 @@ public class SongController {
             @ApiResponse(responseCode = "500", description = "Internal server error while fetching song list")
     })
     @GetMapping(value = "/get-song-list-lite")
-    public ResponseEntity<List<SongsListItem>> getSongsListLite(@RequestParam boolean vaultProtected) {
+    public ResponseEntity<List<SongsListItem>> getSongsListLite(@RequestParam(defaultValue = "") String password, @RequestParam boolean vaultProtected) {
         try {
+            PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
+            passwordRequestDTO.setEncodedPassword(password);
+            if (vaultProtected && !credentialService.isValidPassword(passwordRequestDTO)) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
             // Fetch paginated song list
             List<SongsListItem> songsList = songService.getSongsListWithoutCoverImages(vaultProtected);
 
