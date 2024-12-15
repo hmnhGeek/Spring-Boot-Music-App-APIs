@@ -67,8 +67,11 @@ public class SongController {
             @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the cover image")
     })
     @GetMapping(value = "/get-song-cover-image/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<?> getSongCoverImageByIdAndDecrypt(@PathVariable("id") String songId) {
+    public ResponseEntity<?> getSongCoverImageByIdAndDecrypt(@PathVariable("id") String songId, @RequestParam(defaultValue = "") String password) {
         try {
+            if (songService.unauthorizedAccessToAsset(songId, password)) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
             // Delegate to service for retrieving and decrypting the cover image
             HashMap<String, Object> decryptedMusicFile = songService.getDecryptedSongCoverById(songId);
 
@@ -94,8 +97,11 @@ public class SongController {
             @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the song")
     })
     @GetMapping(value = "/get-song/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<?> getSongByIdAndDecrypt(@PathVariable("id") String songId) {
+    public ResponseEntity<?> getSongByIdAndDecrypt(@PathVariable("id") String songId, @RequestParam(defaultValue = "") String password) {
         try {
+            if (songService.unauthorizedAccessToAsset(songId, password)) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
             // Delegate to service for retrieving and decrypting the song
             HashMap<String, Object> decryptedMusicFile = songService.getDecryptedSongById(songId);
 

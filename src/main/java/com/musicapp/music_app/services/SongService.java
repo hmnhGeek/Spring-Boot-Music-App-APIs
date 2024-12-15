@@ -1,5 +1,6 @@
 package com.musicapp.music_app.services;
 
+import DTOs.requests.PasswordRequestDTO;
 import DTOs.requests.SongUploadRequestDTO;
 import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Song;
@@ -29,11 +30,24 @@ public class SongService {
     private SongRepository songRepository;
 
     @Autowired
+    private CredentialService credentialService;
+
+    @Autowired
     private CustomSongRepositoryImpl customSongRepositoryImpl;
 
     private static final String MUSIC_FOLDER = "music";
     private static final String COVERS_FOLDER = "covers";
 
+    public boolean unauthorizedAccessToAsset(String songId, String encodedPassword) {
+        Optional<Song> optionalSong = songRepository.findById(songId);
+        if (optionalSong.isEmpty()) {
+            return true;
+        }
+        Song song = optionalSong.get();
+        PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
+        passwordRequestDTO.setEncodedPassword(encodedPassword);
+        return song.isVaultProtected() && !credentialService.isValidPassword(passwordRequestDTO);
+    }
 
     public Song uploadAndEncryptSong(MultipartFile musicFile, MultipartFile coverImage) throws Exception {
         FileManagementUtility.createFolderIfNotExists(MUSIC_FOLDER);
