@@ -149,4 +149,31 @@ public class PlaylistService {
     }
 
 
+    public Playlist removeSongFromPlaylist(String playlistId, String songId, String password) {
+        if (unauthorizedAccessToPlaylist(playlistId, password)) {
+            throw new RuntimeException("User not authorized to view playlist with ID: " + playlistId);
+        }
+
+        // Fetch the playlist by its ID
+        Optional<Playlist> playlistOptional = playlistRepository.findById(playlistId);
+
+        if (!playlistOptional.isPresent()) {
+            throw new RuntimeException("Playlist not found with id: " + playlistId);
+        }
+
+        Playlist playlist = playlistOptional.get();
+        List<String> songIds = playlist.getSongIds();
+
+        // Check if the songId exists in the playlist
+        if (songIds.contains(songId)) {
+            // Remove the songId from the playlist
+            songIds.remove(songId);
+
+            // Update the playlist and save it
+            playlist.setSongIds(songIds);
+            return playlistRepository.save(playlist);
+        } else {
+            throw new RuntimeException("Song with id " + songId + " not found in the playlist.");
+        }
+    }
 }

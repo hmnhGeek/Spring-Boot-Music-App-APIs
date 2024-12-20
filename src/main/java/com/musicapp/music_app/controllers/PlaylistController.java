@@ -88,4 +88,12 @@ public class PlaylistController {
         List<SongsListItem> songs = playlistService.getAllSongsInPlaylists(playlistId, password);
         return ResponseEntity.ok().body(songs);
     }
+
+    @DeleteMapping("/remove-song/{playlistId}/{songId}")
+    public Playlist removeSongFromPlaylist(
+            @RequestParam(defaultValue = "") String password,
+            @PathVariable String playlistId,
+            @PathVariable String songId) {
+        return playlistService.removeSongFromPlaylist(playlistId, songId, password);
+    }
 }
