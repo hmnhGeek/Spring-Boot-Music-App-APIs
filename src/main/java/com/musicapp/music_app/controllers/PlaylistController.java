@@ -4,6 +4,7 @@ import DTOs.requests.AddPlaylistRequestDTO;
 import DTOs.requests.AddSongToPlaylistRequestDTO;
 import DTOs.requests.PasswordRequestDTO;
 import DTOs.responses.PlaylistResponseDTO;
+import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Playlist;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.services.CredentialService;
@@ -75,5 +76,16 @@ public class PlaylistController {
         }
         List<PlaylistResponseDTO> playlists = playlistService.getAllPlaylists(isProtected);
         return ResponseEntity.ok().body(playlists);
+    }
+
+    @Operation(summary = "Get all songs in a playlist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Fetched songs successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while fetching songs")
+    })
+    @GetMapping("/get-songs")
+    public ResponseEntity<List<SongsListItem>> getAllSongsInPlaylist(@RequestParam(defaultValue = "") String password, @RequestParam String playlistId) {
+        List<SongsListItem> songs = playlistService.getAllSongsInPlaylists(playlistId, password);
+        return ResponseEntity.ok().body(songs);
     }
 }

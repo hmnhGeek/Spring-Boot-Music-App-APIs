@@ -4,6 +4,7 @@ import DTOs.requests.AddPlaylistRequestDTO;
 import DTOs.requests.AddSongToPlaylistRequestDTO;
 import DTOs.requests.PasswordRequestDTO;
 import DTOs.responses.PlaylistResponseDTO;
+import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Playlist;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.repositories.PlaylistRepository;
@@ -108,6 +109,31 @@ public class PlaylistService {
         return playlists.stream()
                 .map(playlist -> new PlaylistResponseDTO(playlist.getId(), playlist.getName(), playlist.isProtectedPlaylist()))
                 .collect(Collectors.toList());
+    }
+
+    public List<SongsListItem> getAllSongsInPlaylists(String playlistId, String password) {
+        if(unauthorizedAccessToPlaylist(playlistId, password)) {
+            throw new RuntimeException("User not authorized to view playlist with ID: " + playlistId);
+        }
+
+        // Fetch the playlist by its ID
+        Optional<Playlist> playlistOptional = playlistRepository.findById(playlistId);
+
+        if (!playlistOptional.isPresent()) {
+            throw new RuntimeException("Playlist not found with id: " + playlistId);
+        }
+
+        List<SongsListItem> songs;
+        List<String> songIds = playlistOptional.get().getSongIds();
+        songs = songIds.stream().map(x -> {
+            Optional<Song> song = songRepository.findById(x);
+            SongsListItem item = new SongsListItem();
+            song.ifPresent(value -> item.setOriginalName(value.getOriginalName()));
+            song.ifPresent(value -> item.setId(value.getId()));
+            return item;
+        }).toList();
+
+        return songs;
     }
 
 }
