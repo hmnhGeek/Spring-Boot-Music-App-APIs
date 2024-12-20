@@ -2,9 +2,11 @@ package com.musicapp.music_app.controllers;
 
 import DTOs.requests.AddPlaylistRequestDTO;
 import DTOs.requests.AddSongToPlaylistRequestDTO;
+import DTOs.requests.PasswordRequestDTO;
 import DTOs.responses.PlaylistResponseDTO;
 import com.musicapp.music_app.model.Playlist;
 import com.musicapp.music_app.model.Song;
+import com.musicapp.music_app.services.CredentialService;
 import com.musicapp.music_app.services.PlaylistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,6 +28,9 @@ import java.util.Optional;
 public class PlaylistController {
     @Autowired
     private PlaylistService playlistService;
+
+    @Autowired
+    private CredentialService credentialService;
 
     @Operation(summary = "Create new playlist")
     @ApiResponses(value = {
@@ -62,7 +67,13 @@ public class PlaylistController {
             @ApiResponse(responseCode = "500", description = "Internal server error while fetching playlists")
     })
     @GetMapping("/{isProtected}")
-    public List<PlaylistResponseDTO> getAllPlaylists(@RequestParam Boolean isProtected) {
-        return playlistService.getAllPlaylists(isProtected);
+    public ResponseEntity<List<PlaylistResponseDTO>> getAllPlaylists(@RequestParam(defaultValue = "") String password, @RequestParam Boolean isProtected) {
+        PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
+        passwordRequestDTO.setEncodedPassword(password);
+        if (isProtected && !credentialService.isValidPassword(passwordRequestDTO)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        List<PlaylistResponseDTO> playlists = playlistService.getAllPlaylists(isProtected);
+        return ResponseEntity.ok().body(playlists);
     }
 }

@@ -7,4 +7,5 @@ import org.bson.types.ObjectId;
 public class AddSongToPlaylistRequestDTO {
     private String playlistId;
     private String songId;
+    private String password;
 }

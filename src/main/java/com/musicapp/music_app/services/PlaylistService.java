@@ -2,6 +2,7 @@ package com.musicapp.music_app.services;
 
 import DTOs.requests.AddPlaylistRequestDTO;
 import DTOs.requests.AddSongToPlaylistRequestDTO;
+import DTOs.requests.PasswordRequestDTO;
 import DTOs.responses.PlaylistResponseDTO;
 import com.musicapp.music_app.model.Playlist;
 import com.musicapp.music_app.model.Song;
@@ -25,6 +26,20 @@ public class PlaylistService {
     @Autowired
     private SongRepository songRepository;
 
+    @Autowired
+    private CredentialService credentialService;
+
+    private boolean unauthorizedAccessToPlaylist(String playlistId, String encodedPassword) {
+        Optional<Playlist> optionalPlaylist = playlistRepository.findById(playlistId);
+        if (optionalPlaylist.isEmpty()) {
+            return true;
+        }
+        Playlist playlist = optionalPlaylist.get();
+        PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
+        passwordRequestDTO.setEncodedPassword(encodedPassword);
+        return playlist.isProtectedPlaylist() && !credentialService.isValidPassword(passwordRequestDTO);
+    }
+
     public Playlist createPlaylist(AddPlaylistRequestDTO addPlaylistRequestDTO) {
         String name = addPlaylistRequestDTO.getPlaylistName();
         List<String> songIds = new ArrayList<>();
@@ -35,6 +50,12 @@ public class PlaylistService {
 
     public Playlist addSongToPlaylist(AddSongToPlaylistRequestDTO addSongToPlaylistRequestDTO) {
         String playlistId = addSongToPlaylistRequestDTO.getPlaylistId();
+        String encodedPassword = addSongToPlaylistRequestDTO.getPassword();
+
+        if(unauthorizedAccessToPlaylist(playlistId, encodedPassword)) {
+            throw new RuntimeException("User not authorized to view playlist with ID: " + playlistId);
+        }
+
         String songId = addSongToPlaylistRequestDTO.getSongId();
 
         // Fetch the playlist by its ID
