@@ -9,15 +9,17 @@ import java.util.List;
 public class Playlist {
 
     @Id
-    private String id;  // Change ObjectId to String
+    private String id;
     private String name;
-    private List<String> songIds;  // Change ObjectId to String
+    private List<String> songIds;
+    private boolean protectedPlaylist;  // New field
 
     // Constructors, getters, and setters
 
-    public Playlist(String name, List<String> songIds) {
+    public Playlist(String name, List<String> songIds, boolean protectedPlaylist) {
         this.name = name;
         this.songIds = songIds;
+        this.protectedPlaylist = protectedPlaylist;
     }
 
     public String getId() {
@@ -42,5 +44,13 @@ public class Playlist {
 
     public void setSongIds(List<String> songIds) {
         this.songIds = songIds;
+    }
+
+    public boolean isProtectedPlaylist() {
+        return protectedPlaylist;
+    }
+
+    public void setProtectedPlaylist(boolean protectedPlaylist) {
+        this.protectedPlaylist = protectedPlaylist;
     }
 }
