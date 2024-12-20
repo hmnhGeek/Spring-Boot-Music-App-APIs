@@ -123,17 +123,30 @@ public class PlaylistService {
             throw new RuntimeException("Playlist not found with id: " + playlistId);
         }
 
-        List<SongsListItem> songs;
-        List<String> songIds = playlistOptional.get().getSongIds();
-        songs = songIds.stream().map(x -> {
-            Optional<Song> song = songRepository.findById(x);
-            SongsListItem item = new SongsListItem();
-            song.ifPresent(value -> item.setOriginalName(value.getOriginalName()));
-            song.ifPresent(value -> item.setId(value.getId()));
-            return item;
-        }).toList();
+        Playlist playlist = playlistOptional.get();
+        List<String> songIds = playlist.getSongIds();
 
-        return songs;
+        // Remove stale song IDs that don't exist in the system
+        List<String> validSongIds = songIds.stream()
+                .filter(songId -> songRepository.findById(songId).isPresent())  // Only keep valid IDs
+                .collect(Collectors.toList());
+
+        // Update the playlist with the valid song IDs
+        playlist.setSongIds(validSongIds);
+        playlistRepository.save(playlist);  // Save the updated playlist
+
+        // Fetch the valid songs from the repository
+
+        return validSongIds.stream().map(songId -> {
+            Optional<Song> song = songRepository.findById(songId);
+            SongsListItem item = new SongsListItem();
+            song.ifPresent(value -> {
+                item.setOriginalName(value.getOriginalName());
+                item.setId(value.getId());
+            });
+            return item;
+        }).collect(Collectors.toList());
     }
+
 
 }
