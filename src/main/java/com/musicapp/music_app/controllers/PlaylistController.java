@@ -67,7 +67,7 @@ public class PlaylistController {
             @ApiResponse(responseCode = "201", description = "Playlists fetched successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error while fetching playlists")
     })
-    @GetMapping("/{isProtected}")
+    @GetMapping("")
     public ResponseEntity<List<PlaylistResponseDTO>> getAllPlaylists(@RequestParam(defaultValue = "") String password, @RequestParam Boolean isProtected) {
         PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
         passwordRequestDTO.setEncodedPassword(password);
