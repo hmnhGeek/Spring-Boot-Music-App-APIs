@@ -176,4 +176,19 @@ public class PlaylistService {
             throw new RuntimeException("Song with id " + songId + " not found in the playlist.");
         }
     }
+
+    public void deletePlaylist(String playlistId, String password) {
+        if (unauthorizedAccessToPlaylist(playlistId, password)) {
+            throw new RuntimeException("User not authorized to delete playlist with ID: " + playlistId);
+        }
+
+        // Check if the playlist exists
+        Optional<Playlist> playlistOptional = playlistRepository.findById(playlistId);
+        if (!playlistOptional.isPresent()) {
+            throw new RuntimeException("Playlist not found with id: " + playlistId);
+        }
+
+        // Remove the playlist
+        playlistRepository.deleteById(playlistId);
+    }
 }
