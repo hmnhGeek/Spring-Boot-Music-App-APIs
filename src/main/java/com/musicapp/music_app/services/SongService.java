@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.crypto.SecretKey;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,6 +60,9 @@ public class SongService {
         SecretKey encryptionKey = EncryptionManagement.generateEncryptionKey();
         String musicFilePath = EncryptionManagement.saveEncryptedFile(musicFile.getInputStream(), MUSIC_FOLDER, encryptionKey);
         String coverImagePath = EncryptionManagement.saveEncryptedFile(coverImage.getInputStream(), COVERS_FOLDER, encryptionKey);
+        DropboxService dropboxService = new DropboxService();
+        String dropboxMusicPath = dropboxService.uploadFile(musicFilePath, "/music/" + Paths.get(musicFilePath).getFileName().toString());
+        String dropboxCoverPath = dropboxService.uploadFile(coverImagePath, "/covers/" + Paths.get(coverImagePath).getFileName().toString());
         Song song = new Song();
         song.setFilePath(musicFilePath);
         song.setCoverImagePath(coverImagePath);
