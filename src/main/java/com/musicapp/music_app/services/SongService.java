@@ -60,9 +60,28 @@ public class SongService {
         SecretKey encryptionKey = EncryptionManagement.generateEncryptionKey();
         String musicFilePath = EncryptionManagement.saveEncryptedFile(musicFile.getInputStream(), MUSIC_FOLDER, encryptionKey);
         String coverImagePath = EncryptionManagement.saveEncryptedFile(coverImage.getInputStream(), COVERS_FOLDER, encryptionKey);
+
+        // Initialize DropboxService and upload files, with error handling
         DropboxService dropboxService = new DropboxService();
-        String dropboxMusicPath = dropboxService.uploadFile(musicFilePath, "/music/" + Paths.get(musicFilePath).getFileName().toString());
-        String dropboxCoverPath = dropboxService.uploadFile(coverImagePath, "/covers/" + Paths.get(coverImagePath).getFileName().toString());
+        String dropboxMusicPath = null;
+        String dropboxCoverPath = null;
+
+        try {
+            dropboxMusicPath = dropboxService.uploadFile(musicFilePath, "/music/" + Paths.get(musicFilePath).getFileName().toString());
+        } catch (Exception e) {
+            // Log the error and continue, or handle as needed
+            System.err.println("Failed to upload music file to Dropbox: " + e.getMessage());
+            // You could set dropboxMusicPath to a default value or leave it as null
+        }
+
+        try {
+            dropboxCoverPath = dropboxService.uploadFile(coverImagePath, "/covers/" + Paths.get(coverImagePath).getFileName().toString());
+        } catch (Exception e) {
+            // Log the error and continue, or handle as needed
+            System.err.println("Failed to upload cover image to Dropbox: " + e.getMessage());
+            // You could set dropboxCoverPath to a default value or leave it as null
+        }
+
         Song song = new Song();
         song.setFilePath(musicFilePath);
         song.setCoverImagePath(coverImagePath);
