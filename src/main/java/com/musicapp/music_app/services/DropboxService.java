@@ -43,4 +43,14 @@ public class DropboxService {
                     .download(out);
         }
     }
+
+    public void deleteFile(String dropboxPath) throws Exception {
+        try {
+            // Move the file to trash
+            client.files().deleteV2(dropboxPath);
+        } catch (Exception e) {
+            // Log the error but continue with the process
+            System.err.println("Error permanently deleting file from Dropbox: " + e.getMessage());
+        }
+    }
 }

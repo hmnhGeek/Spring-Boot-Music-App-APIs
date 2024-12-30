@@ -230,6 +230,21 @@ public class SongService {
             // Delete song and cover image files
             boolean filesDeleted = FileManagementUtility.deleteFiles(song.getFilePath(), song.getCoverImagePath());
 
+            // Initialize DropboxService
+            DropboxService dropboxService = new DropboxService();
+
+            // Delete song and cover image files from Dropbox
+            try {
+                // Delete music file from Dropbox
+                dropboxService.deleteFile("/music/" + Paths.get(song.getFilePath()).getFileName().toString());  // Assuming deleteFile method exists in DropboxService
+
+                // Delete cover image from Dropbox
+                dropboxService.deleteFile("/covers/" + Paths.get(song.getCoverImagePath()).getFileName().toString());  // Assuming deleteFile method exists in DropboxService
+            } catch (Exception e) {
+                // Log the error and continue
+                System.err.println("Failed to delete files from Dropbox for song ID: " + songId + " - " + e.getMessage());
+            }
+
             if (!filesDeleted) {
                 System.err.println("Some files could not be deleted for song ID: " + songId);
             }
