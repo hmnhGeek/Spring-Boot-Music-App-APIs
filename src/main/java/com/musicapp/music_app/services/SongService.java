@@ -79,6 +79,7 @@ public class SongService {
         }
         Song song = optionalSong.get();
         HashMap<String, Object> map = getDecryptedSongCoverById(songId);
+        String oldCoverImagePath = song.getCoverImagePath();
 
         SecretKey encryptionKey = EncryptionManagement.getSecretKeyFromBase64(song.getEncryptionKey());
         String newCoverImagePath = EncryptionManagement.saveEncryptedFile(newCoverImage.getInputStream(), COVERS_FOLDER, encryptionKey);
@@ -87,6 +88,11 @@ public class SongService {
         song.setCoverImageExtension(newCoverFilenameDetails.get(1));
         song.setCoverImagePath(newCoverImagePath);
         songRepository.save(song);
+
+        // Delete old cover image file
+        FileManagementUtility.deleteFiles(oldCoverImagePath);
+
+        // return the map
         return map;
     }
 
