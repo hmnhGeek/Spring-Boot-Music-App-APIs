@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.*;
@@ -68,6 +69,25 @@ public class SongService {
         song.setCoverImageExtension(coverFilenameDetails.get(1));
         song.setEncryptionKey(Base64.getEncoder().encodeToString(encryptionKey.getEncoded()));
         return songRepository.save(song);
+    }
+
+    public HashMap<String, Object> changeSongCoverImage(String songId, MultipartFile newCoverImage) throws Exception {
+        List<String> newCoverFilenameDetails = FileManagementUtility.getFilenameAndExtension(Objects.requireNonNull(newCoverImage.getOriginalFilename()));
+        Optional<Song> optionalSong = songRepository.findById(songId);
+        if (optionalSong.isEmpty()) {
+            return null;
+        }
+        Song song = optionalSong.get();
+        HashMap<String, Object> map = getDecryptedSongCoverById(songId);
+
+        SecretKey encryptionKey = EncryptionManagement.getSecretKeyFromBase64(song.getEncryptionKey());
+        String newCoverImagePath = EncryptionManagement.saveEncryptedFile(newCoverImage.getInputStream(), COVERS_FOLDER, encryptionKey);
+
+        song.setOriginalCoverImageName(newCoverFilenameDetails.get(0));
+        song.setCoverImageExtension(newCoverFilenameDetails.get(1));
+        song.setCoverImagePath(newCoverImagePath);
+        songRepository.save(song);
+        return map;
     }
 
     public HashMap<String, Object> getDecryptedSongCoverById(String songId) throws Exception {

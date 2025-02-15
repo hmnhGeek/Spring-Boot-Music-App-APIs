@@ -240,4 +240,35 @@ public class SongController {
         }
     }
 
+    @Operation(summary = "Update a song cover by song ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Song cover updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Song not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while updating the song cover")
+    })
+    @PutMapping(value = "/change-cover/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> changeSongCover(@RequestParam(defaultValue = "") String password, @PathVariable("id") String songId, @RequestParam("coverImagePath") MultipartFile coverImagePath) {
+        try {
+            if (songService.unauthorizedAccessToAsset(songId, password)) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+
+            HashMap<String, Object> decryptedOldCoverImage = songService.changeSongCoverImage(songId, coverImagePath);
+            if (decryptedOldCoverImage == null) {
+                return new ResponseEntity<>("Cover image not found or decryption failed", HttpStatus.NOT_FOUND);
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + decryptedOldCoverImage.get("filename") + "\"") // Set appropriate filename here
+                    .body(decryptedOldCoverImage.get("file"));
+        } catch (IllegalArgumentException e) {
+            // Handle case where the song ID is invalid or update fails
+            return new ResponseEntity<>("Song not found or update failed", HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            // Handle unexpected exceptions
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }
