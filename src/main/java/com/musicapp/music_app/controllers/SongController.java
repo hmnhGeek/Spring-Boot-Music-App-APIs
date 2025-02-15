@@ -247,12 +247,8 @@ public class SongController {
             @ApiResponse(responseCode = "500", description = "Internal server error while updating the song cover")
     })
     @PutMapping(value = "/change-cover/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> changeSongCover(@RequestParam(defaultValue = "") String password, @PathVariable("id") String songId, @RequestParam("coverImagePath") MultipartFile coverImagePath) {
+    public ResponseEntity<?> changeSongCover(@PathVariable("id") String songId, @RequestParam("coverImagePath") MultipartFile coverImagePath) {
         try {
-            if (songService.unauthorizedAccessToAsset(songId, password)) {
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
-
             HashMap<String, Object> decryptedOldCoverImage = songService.changeSongCoverImage(songId, coverImagePath);
             if (decryptedOldCoverImage == null) {
                 return new ResponseEntity<>("Cover image not found or decryption failed", HttpStatus.NOT_FOUND);
