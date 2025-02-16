@@ -89,8 +89,12 @@ public class SongService {
         song.setCoverImagePath(newCoverImagePath);
         songRepository.save(song);
 
-        // Delete old cover image file
-        FileManagementUtility.deleteFiles(oldCoverImagePath);
+        try {
+            // Delete old cover image file
+            FileManagementUtility.deleteFiles(oldCoverImagePath);
+        } catch (Exception e) {
+            //
+        }
 
         // return the map
         return map;
