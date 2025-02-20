@@ -65,6 +65,15 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults()) // httpBasic(Customizer.withDefaults()): Enables basic authentication (username/password prompt in the browser or API client).
                 .csrf(AbstractHttpConfigurer::disable) // csrf(AbstractHttpConfigurer::disable): Disables CSRF (Cross-Site Request Forgery) protection. This might be fine for APIs but could be unsafe for web apps if not carefully managed.
+                .logout(logout -> logout
+                        .logoutUrl("/logout") // Defines the logout endpoint
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(200);
+                            response.getWriter().write("Logout successful");
+                        })
+                        .invalidateHttpSession(true) // Invalidate session
+                        .deleteCookies("JSESSIONID") // Delete session cookies
+                )
                 .build();
     }
 
