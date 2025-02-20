@@ -187,7 +187,12 @@ public class SongService {
     public Page<SongsListItem> getSongsList(Pageable pageable) {
         String userName = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUserName(userName);
-        List<String> songIds = user.getSongs().stream().map(Song::getId).toList();
+        List<String> songIds = user.getSongs().stream().map(x -> {
+            if (x == null) {
+                return null;
+            }
+            return x.getId();
+        }).filter(Objects::nonNull).toList();
 
         Page<Song> songsPage = songRepository.findByIdIn(songIds, pageable);
 
@@ -227,11 +232,14 @@ public class SongService {
 
         // Map the paginated songs to SongsListItem objects
         List<SongsListItem> songsList = songs.stream().map(song -> {
+            if (song == null) {
+                return null;
+            }
             SongsListItem songsListItem = new SongsListItem();
             songsListItem.setId(song.getId());
             songsListItem.setOriginalName(song.getOriginalName());
             return songsListItem;
-        }).collect(Collectors.toList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
 
         // Wrap the mapped list into a Page object
         return songsList;
