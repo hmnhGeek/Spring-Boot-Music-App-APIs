@@ -18,6 +18,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -67,11 +69,8 @@ public class SongController {
             @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the cover image")
     })
     @GetMapping(value = "/get-song-cover-image/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<?> getSongCoverImageByIdAndDecrypt(@PathVariable("id") String songId, @RequestParam(defaultValue = "") String password) {
+    public ResponseEntity<?> getSongCoverImageByIdAndDecrypt(@PathVariable("id") String songId) {
         try {
-            if (songService.unauthorizedAccessToAsset(songId, password)) {
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
             // Delegate to service for retrieving and decrypting the cover image
             HashMap<String, Object> decryptedMusicFile = songService.getDecryptedSongCoverById(songId);
 

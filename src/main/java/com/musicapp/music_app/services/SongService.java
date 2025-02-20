@@ -4,8 +4,10 @@ import DTOs.requests.PasswordRequestDTO;
 import DTOs.requests.SongUploadRequestDTO;
 import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Song;
+import com.musicapp.music_app.model.User;
 import com.musicapp.music_app.repositories.CustomSongRepositoryImpl;
 import com.musicapp.music_app.repositories.SongRepository;
+import com.musicapp.music_app.repositories.UserRepository;
 import com.musicapp.music_app.utils.EncryptionManagement;
 import com.musicapp.music_app.utils.FileManagementUtility;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,6 +39,9 @@ public class SongService {
 
     @Autowired
     private CustomSongRepositoryImpl customSongRepositoryImpl;
+
+    @Autowired
+    private UserRepository userRepository;
 
     private static final String MUSIC_FOLDER = "music";
     private static final String COVERS_FOLDER = "covers";
@@ -101,12 +108,16 @@ public class SongService {
     }
 
     public HashMap<String, Object> getDecryptedSongCoverById(String songId) throws Exception {
-        Optional<Song> optionalSong = songRepository.findById(songId);
-        if (optionalSong.isEmpty()) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        User user = userRepository.findByUserName(authentication.getName());
+        List<Song> songs = user.getSongs().stream().filter(x -> x.getId().equals(songId)).toList();
+
+        if (songs.isEmpty()) {
             return null; // Return null if the song is not found
         }
 
-        Song song = optionalSong.get();
+        Song song = songs.get(0);
 
         // Decode the encryption key
         String encryptionKeyBase64 = song.getEncryptionKey();
