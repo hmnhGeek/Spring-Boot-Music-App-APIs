@@ -96,11 +96,8 @@ public class SongController {
             @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the song")
     })
     @GetMapping(value = "/get-song/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<?> getSongByIdAndDecrypt(@PathVariable("id") String songId, @RequestParam(defaultValue = "") String password) {
+    public ResponseEntity<?> getSongByIdAndDecrypt(@PathVariable("id") String songId) {
         try {
-            if (songService.unauthorizedAccessToAsset(songId, password)) {
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
             // Delegate to service for retrieving and decrypting the song
             HashMap<String, Object> decryptedMusicFile = songService.getDecryptedSongById(songId);
 
@@ -127,22 +124,14 @@ public class SongController {
     })
     @GetMapping(value = "/get-song-list")
     public ResponseEntity<Map<String, Object>> getSongsList(
-            @RequestParam(defaultValue = "") String password,
-            @RequestParam boolean vaultProtected,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size) {
         try {
-            PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
-            passwordRequestDTO.setEncodedPassword(password);
-            if (vaultProtected && !credentialService.isValidPassword(passwordRequestDTO)) {
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
-
             // Create Pageable object
             Pageable pageable = PageRequest.of(page, size);
 
             // Fetch paginated song list
-            Page<SongsListItem> songPage = songService.getSongsList(vaultProtected, pageable);
+            Page<SongsListItem> songPage = songService.getSongsList(pageable);
 
             // Check if the page is empty
             if (songPage.getContent().isEmpty()) {
@@ -170,15 +159,10 @@ public class SongController {
             @ApiResponse(responseCode = "500", description = "Internal server error while fetching song list")
     })
     @GetMapping(value = "/get-song-list-lite")
-    public ResponseEntity<List<SongsListItem>> getSongsListLite(@RequestParam(defaultValue = "") String password, @RequestParam boolean vaultProtected) {
+    public ResponseEntity<List<SongsListItem>> getSongsListLite() {
         try {
-            PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
-            passwordRequestDTO.setEncodedPassword(password);
-            if (vaultProtected && !credentialService.isValidPassword(passwordRequestDTO)) {
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
             // Fetch paginated song list
-            List<SongsListItem> songsList = songService.getSongsListWithoutCoverImages(vaultProtected);
+            List<SongsListItem> songsList = songService.getSongsListWithoutCoverImages();
 
             // Check if the page is empty
             if (songsList.isEmpty()) {
@@ -186,32 +170,6 @@ public class SongController {
             }
             return ResponseEntity.ok().body(songsList);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @Operation(summary = "Update the vault_protected flag for a specific song by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Vault protected flag updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Song not found or update failed"),
-            @ApiResponse(responseCode = "500", description = "Internal server error while updating the flag")
-    })
-    @PutMapping("/update-protection-policy/{id}")
-    public ResponseEntity<String> updateVaultProtectedFlag(
-            @PathVariable("id") String songId,
-            @RequestParam boolean vaultProtected) {
-        try {
-            // Call the service method to update the vault_protected flag
-            songService.updateVaultProtected(songId, vaultProtected);
-
-            // Respond with a success message
-            return new ResponseEntity<>("Vault protected flag updated successfully", HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            // Handle case where the song ID is invalid or update fails
-            return new ResponseEntity<>("Song not found or update failed", HttpStatus.NOT_FOUND);
-        } catch (Exception e) {
-            // Handle unexpected exceptions
             System.out.println(e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
