@@ -22,6 +22,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,6 +61,28 @@ public class SongService {
         SecretKey encryptionKey = EncryptionManagement.generateEncryptionKey();
         String musicFilePath = EncryptionManagement.saveEncryptedFile(musicFile.getInputStream(), MUSIC_FOLDER, encryptionKey);
         String coverImagePath = EncryptionManagement.saveEncryptedFile(coverImage.getInputStream(), COVERS_FOLDER, encryptionKey);
+
+        // Initialize DropboxService and upload files, with error handling
+        DropboxService dropboxService = new DropboxService();
+        String dropboxMusicPath = null;
+        String dropboxCoverPath = null;
+
+        try {
+            dropboxMusicPath = dropboxService.uploadFile(musicFilePath, "/music/" + Paths.get(musicFilePath).getFileName().toString());
+        } catch (Exception e) {
+            // Log the error and continue, or handle as needed
+            System.err.println("Failed to upload music file to Dropbox: " + e.getMessage());
+            // You could set dropboxMusicPath to a default value or leave it as null
+        }
+
+        try {
+            dropboxCoverPath = dropboxService.uploadFile(coverImagePath, "/covers/" + Paths.get(coverImagePath).getFileName().toString());
+        } catch (Exception e) {
+            // Log the error and continue, or handle as needed
+            System.err.println("Failed to upload cover image to Dropbox: " + e.getMessage());
+            // You could set dropboxCoverPath to a default value or leave it as null
+        }
+
         Song song = new Song();
         song.setFilePath(musicFilePath);
         song.setCoverImagePath(coverImagePath);
@@ -236,6 +259,21 @@ public class SongService {
 
             // Delete song and cover image files
             boolean filesDeleted = FileManagementUtility.deleteFiles(song.getFilePath(), song.getCoverImagePath());
+
+            // Initialize DropboxService
+            DropboxService dropboxService = new DropboxService();
+
+            // Delete song and cover image files from Dropbox
+            try {
+                // Delete music file from Dropbox
+                dropboxService.deleteFile("/music/" + Paths.get(song.getFilePath()).getFileName().toString());  // Assuming deleteFile method exists in DropboxService
+
+                // Delete cover image from Dropbox
+                dropboxService.deleteFile("/covers/" + Paths.get(song.getCoverImagePath()).getFileName().toString());  // Assuming deleteFile method exists in DropboxService
+            } catch (Exception e) {
+                // Log the error and continue
+                System.err.println("Failed to delete files from Dropbox for song ID: " + songId + " - " + e.getMessage());
+            }
 
             if (!filesDeleted) {
                 System.err.println("Some files could not be deleted for song ID: " + songId);
