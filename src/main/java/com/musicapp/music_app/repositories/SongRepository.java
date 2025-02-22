@@ -21,4 +21,7 @@ public interface SongRepository extends MongoRepository<Song, String> {
 
     @Query("{ 'vault_protected': true }")
     List<Song> findAllProtectedSongsWithoutCover();
+
+    @Query("{ '_id': { $in: ?0 } }")
+    Page<Song> findByIdIn(List<String> songIds, Pageable pageable);
 }

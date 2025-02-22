@@ -4,8 +4,10 @@ import DTOs.requests.PasswordRequestDTO;
 import DTOs.requests.SongUploadRequestDTO;
 import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Song;
+import com.musicapp.music_app.model.User;
 import com.musicapp.music_app.repositories.CustomSongRepositoryImpl;
 import com.musicapp.music_app.repositories.SongRepository;
+import com.musicapp.music_app.repositories.UserRepository;
 import com.musicapp.music_app.utils.EncryptionManagement;
 import com.musicapp.music_app.utils.FileManagementUtility;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,19 +40,22 @@ public class SongService {
     @Autowired
     private CustomSongRepositoryImpl customSongRepositoryImpl;
 
+    @Autowired
+    private UserRepository userRepository;
+
     private static final String MUSIC_FOLDER = "music";
     private static final String COVERS_FOLDER = "covers";
 
-    public boolean unauthorizedAccessToAsset(String songId, String encodedPassword) {
-        Optional<Song> optionalSong = songRepository.findById(songId);
-        if (optionalSong.isEmpty()) {
-            return true;
-        }
-        Song song = optionalSong.get();
-        PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
-        passwordRequestDTO.setEncodedPassword(encodedPassword);
-        return song.isVaultProtected() && !credentialService.isValidPassword(passwordRequestDTO);
-    }
+//    public boolean unauthorizedAccessToAsset(String songId, String encodedPassword) {
+//        Optional<Song> optionalSong = songRepository.findById(songId);
+//        if (optionalSong.isEmpty()) {
+//            return true;
+//        }
+//        Song song = optionalSong.get();
+//        PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
+//        passwordRequestDTO.setEncodedPassword(encodedPassword);
+//        return song.isVaultProtected() && !credentialService.isValidPassword(passwordRequestDTO);
+//    }
 
     public Song uploadAndEncryptSong(MultipartFile musicFile, MultipartFile coverImage) throws Exception {
         FileManagementUtility.createFolderIfNotExists(MUSIC_FOLDER);
@@ -68,16 +75,27 @@ public class SongService {
         song.setFileExtension(musicFilenameDetails.get(1));
         song.setCoverImageExtension(coverFilenameDetails.get(1));
         song.setEncryptionKey(Base64.getEncoder().encodeToString(encryptionKey.getEncoded()));
-        return songRepository.save(song);
+        Song savedSong = songRepository.save(song);
+
+        // adding the song into user's collection.
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(userName);
+        user.getSongs().add(savedSong);
+        userRepository.save(user);
+
+        return savedSong;
     }
 
     public HashMap<String, Object> changeSongCoverImage(String songId, MultipartFile newCoverImage) throws Exception {
-        List<String> newCoverFilenameDetails = FileManagementUtility.getFilenameAndExtension(Objects.requireNonNull(newCoverImage.getOriginalFilename()));
-        Optional<Song> optionalSong = songRepository.findById(songId);
-        if (optionalSong.isEmpty()) {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(userName);
+        List<Song> songs = user.getSongs().stream().filter(x -> x.getId().equals(songId)).toList();
+        if (songs.isEmpty()) {
             return null;
         }
-        Song song = optionalSong.get();
+
+        List<String> newCoverFilenameDetails = FileManagementUtility.getFilenameAndExtension(Objects.requireNonNull(newCoverImage.getOriginalFilename()));
+        Song song = songs.get(0);
         HashMap<String, Object> map = getDecryptedSongCoverById(songId);
         String oldCoverImagePath = song.getCoverImagePath();
 
@@ -101,12 +119,16 @@ public class SongService {
     }
 
     public HashMap<String, Object> getDecryptedSongCoverById(String songId) throws Exception {
-        Optional<Song> optionalSong = songRepository.findById(songId);
-        if (optionalSong.isEmpty()) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        User user = userRepository.findByUserName(authentication.getName());
+        List<Song> songs = user.getSongs().stream().filter(x -> x.getId().equals(songId)).toList();
+
+        if (songs.isEmpty()) {
             return null; // Return null if the song is not found
         }
 
-        Song song = optionalSong.get();
+        Song song = songs.get(0);
 
         // Decode the encryption key
         String encryptionKeyBase64 = song.getEncryptionKey();
@@ -130,12 +152,16 @@ public class SongService {
     }
 
     public HashMap<String, Object> getDecryptedSongById(String songId) throws Exception {
-        Optional<Song> optionalSong = songRepository.findById(songId);
-        if (optionalSong.isEmpty()) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        User user = userRepository.findByUserName(authentication.getName());
+        List<Song> songs = user.getSongs().stream().filter(x -> x.getId().equals(songId)).toList();
+
+        if (songs.isEmpty()) {
             return null; // Return null if the song is not found
         }
 
-        Song song = optionalSong.get();
+        Song song = songs.get(0);
 
         // Decode the encryption key
         String encryptionKeyBase64 = song.getEncryptionKey();
@@ -158,15 +184,17 @@ public class SongService {
         return map;
     }
 
-    public Page<SongsListItem> getSongsList(boolean vaultProtected, Pageable pageable) {
-        Page<Song> songsPage;
+    public Page<SongsListItem> getSongsList(Pageable pageable) {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(userName);
+        List<String> songIds = user.getSongs().stream().map(x -> {
+            if (x == null) {
+                return null;
+            }
+            return x.getId();
+        }).filter(Objects::nonNull).toList();
 
-        // Fetch paginated songs based on the vaultProtected flag
-        if (!vaultProtected) {
-            songsPage = songRepository.findAllNonProtectedSongs(pageable);
-        } else {
-            songsPage = songRepository.findAllProtectedSongs(pageable);
-        }
+        Page<Song> songsPage = songRepository.findByIdIn(songIds, pageable);
 
         // Map the paginated songs to SongsListItem objects
         List<SongsListItem> songsList = songsPage.stream().map(song -> {
@@ -197,23 +225,21 @@ public class SongService {
         return new PageImpl<>(songsList, pageable, songsPage.getTotalElements());
     }
 
-    public List<SongsListItem> getSongsListWithoutCoverImages(boolean vaultProtected) {
-        List<Song> songs;
-
-        // Fetch paginated songs based on the vaultProtected flag
-        if (!vaultProtected) {
-            songs = songRepository.findAllNonProtectedSongsWithoutCover();
-        } else {
-            songs = songRepository.findAllProtectedSongsWithoutCover();
-        }
+    public List<SongsListItem> getSongsListWithoutCoverImages() {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(userName);
+        List<Song> songs = user.getSongs();
 
         // Map the paginated songs to SongsListItem objects
         List<SongsListItem> songsList = songs.stream().map(song -> {
+            if (song == null) {
+                return null;
+            }
             SongsListItem songsListItem = new SongsListItem();
             songsListItem.setId(song.getId());
             songsListItem.setOriginalName(song.getOriginalName());
             return songsListItem;
-        }).collect(Collectors.toList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
 
         // Wrap the mapped list into a Page object
         return songsList;
@@ -226,13 +252,16 @@ public class SongService {
     }
 
     public boolean deleteSongById(String songId) {
-        try {
-            Optional<Song> optionalSong = songRepository.findById(songId);
-            if (optionalSong.isEmpty()) {
-                return false; // Song not found
-            }
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(userName);
 
-            Song song = optionalSong.get();
+        List<Song> songs = user.getSongs().stream().filter(x -> x.getId().equals(songId)).toList();
+        if (songs.isEmpty()) {
+            return false;
+        }
+
+        try {
+            Song song = songs.get(0);
 
             // Delete song and cover image files
             boolean filesDeleted = FileManagementUtility.deleteFiles(song.getFilePath(), song.getCoverImagePath());
@@ -243,6 +272,10 @@ public class SongService {
 
             // Delete the database record
             songRepository.delete(song);
+
+            // remove the song from the user also.
+            user.getSongs().removeIf(x -> x.getId().equals(songId));
+            userRepository.save(user);
 
             return filesDeleted; // Return the status of file deletion
         } catch (Exception e) {
