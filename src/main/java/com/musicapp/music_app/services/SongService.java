@@ -273,6 +273,10 @@ public class SongService {
             // Delete the database record
             songRepository.delete(song);
 
+            // remove the song from the user also.
+            user.getSongs().removeIf(x -> x.getId().equals(songId));
+            userRepository.save(user);
+
             return filesDeleted; // Return the status of file deletion
         } catch (Exception e) {
             System.err.println("Error deleting song: " + e.getMessage());
