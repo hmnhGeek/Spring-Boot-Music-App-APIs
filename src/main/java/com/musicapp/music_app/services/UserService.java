@@ -132,7 +132,7 @@ public class UserService {
         deleteById(user.getId());
     }
 
-    public HashMap<String, Object> getDecryptedProfileByUserId(String userId) throws Exception {
+    public HashMap<String, Object> getDecryptedProfileImage() throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         User user = userRepository.findByUserName(authentication.getName());

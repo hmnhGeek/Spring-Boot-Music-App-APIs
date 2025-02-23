@@ -21,17 +21,17 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @Operation(summary = "Retrieve and decrypt a profile image by its user ID")
+    @Operation(summary = "Retrieve and decrypt a profile image of a user.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Profile image retrieved and decrypted successfully"),
             @ApiResponse(responseCode = "404", description = "Profile image not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the profile image")
     })
-    @GetMapping(value = "/profile-image/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<?> getUserProfileImage(@PathVariable("id") String userId) {
+    @GetMapping(value = "/profile-image", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<?> getUserProfileImage() {
         try {
             // Delegate to service for retrieving and decrypting the profile image
-            HashMap<String, Object> decryptedProfileImage = userService.getDecryptedProfileByUserId(userId);
+            HashMap<String, Object> decryptedProfileImage = userService.getDecryptedProfileImage();
 
             if (decryptedProfileImage == null) {
                 return new ResponseEntity<>("Profile image not found or decryption failed", HttpStatus.NOT_FOUND);
