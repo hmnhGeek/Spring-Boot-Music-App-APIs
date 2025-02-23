@@ -1,22 +1,25 @@
 package com.musicapp.music_app.services;
 
+import com.musicapp.music_app.DTO.Requests.User.CreateUserRequestDTO;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.model.User;
 import com.musicapp.music_app.repositories.UserRepository;
+import com.musicapp.music_app.utils.EncryptionManagement;
+import com.musicapp.music_app.utils.FileManagementUtility;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.crypto.SecretKey;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Component
 public class UserService {
@@ -25,16 +28,28 @@ public class UserService {
 
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    private static final String PROFILE_FOLDER = "profiles";
+
     /**
      *
      * @param user Parameter of type {@code User}.
      * @return {@code User} by saving the entry inside the MongoDB collection.
      */
-    public User save(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRoles(List.of("USER"));
-        User savedJournalEntry = userRepository.save(user);
-        return user;
+    public User save(CreateUserRequestDTO user, MultipartFile profileImage) throws Exception {
+        FileManagementUtility.createFolderIfNotExists(PROFILE_FOLDER);
+
+        List<String> profileImageDetails = FileManagementUtility.getFilenameAndExtension(Objects.requireNonNull(profileImage.getOriginalFilename()));
+        SecretKey encryptionKey = EncryptionManagement.generateEncryptionKey();
+        String profileImagePath = EncryptionManagement.saveEncryptedFile(profileImage.getInputStream(), PROFILE_FOLDER, encryptionKey);
+
+        User savedUser = new User();
+        savedUser.setUserName(user.getUserName());
+        savedUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        savedUser.setRoles(List.of("USER"));
+        savedUser.setProfileImagePath(profileImagePath);
+        savedUser.setProfileImageExtension(profileImageDetails.get(1));
+        savedUser.setEncryptionKey(Base64.getEncoder().encodeToString(encryptionKey.getEncoded()));
+        return userRepository.save(savedUser);
     }
 
     /**
@@ -94,16 +109,16 @@ public class UserService {
      *
      * @param user A type of {@code User} whose username or password needs to be updated.
      */
-    public void updateUser(User user) {
-        // To authenticate a user from headers use this syntax.
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userName = authentication.getName();
-
-        User savedUser = findByUserName(userName);
-        savedUser.setUserName(user.getUserName());
-        savedUser.setPassword(user.getPassword());
-        save(savedUser);
-    }
+//    public void updateUser(User user) {
+//        // To authenticate a user from headers use this syntax.
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        String userName = authentication.getName();
+//
+//        User savedUser = findByUserName(userName);
+//        savedUser.setUserName(user.getUserName());
+//        savedUser.setPassword(user.getPassword());
+//        save(savedUser);
+//    }
 
     /**
      * Delete the user in session.
@@ -115,5 +130,31 @@ public class UserService {
 
         User user = findByUserName(username);
         deleteById(user.getId());
+    }
+
+    public HashMap<String, Object> getDecryptedProfileByUserId(String userId) throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        User user = userRepository.findByUserName(authentication.getName());
+
+        // Decode the encryption key
+        String encryptionKeyBase64 = user.getEncryptionKey();
+        SecretKey encryptionKey = EncryptionManagement.getSecretKeyFromBase64(encryptionKeyBase64);
+
+        // Decrypt the profile image using the encryption key
+        byte[] decryptedData = EncryptionManagement.decryptFile(user.getProfileImagePath(), encryptionKey);
+
+        String originalFilename = user.getUserName();
+        String originalExtension = user.getProfileImageExtension();
+        String decryptedFilename = originalFilename + "." + originalExtension;
+
+        // Prepare the ByteArrayResource to send back the decrypted file as a blob
+        ByteArrayResource resource = new ByteArrayResource(decryptedData);
+
+        // Return the decrypted file as a response entity with the appropriate headers
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("filename", decryptedFilename);
+        map.put("file", resource);
+        return map;
     }
 }

@@ -38,7 +38,7 @@ public class SecurityConfig {
                 }))
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/public/**").permitAll()
-                        .requestMatchers("/api/songs/**", "/users/**").authenticated()
+                        .requestMatchers("/api/songs/**", "/api/users/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> httpBasic.authenticationEntryPoint(customAuthenticationEntryPoint)) // Use custom entry point

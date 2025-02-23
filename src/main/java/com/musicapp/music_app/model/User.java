@@ -1,9 +1,7 @@
 package com.musicapp.music_app.model;
 
 import com.musicapp.music_app.model.Song;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -16,6 +14,8 @@ import java.util.List;
 @Document(collection = "users")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     private ObjectId id;
@@ -27,8 +27,22 @@ public class User {
     @Indexed(unique = true)
     @NonNull
     private String userName;
+
     @NonNull
     private String password;
+
+    @NonNull
+    private String fullName;
+
+    private String encryptionKey;
+
+    private String profileImagePath;
+
+    private String profileImageExtension;
+
+    private String bannerImagePath;
+
+    private String bannerImageExtension;
 
     // This will create a reference to the journal_entries collection by just their ObjectId.
     @DBRef
