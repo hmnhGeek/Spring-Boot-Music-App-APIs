@@ -1,6 +1,7 @@
 package com.musicapp.music_app.services;
 
 import com.musicapp.music_app.DTO.Requests.User.CreateUserRequestDTO;
+import com.musicapp.music_app.DTO.Response.User.UserMetaDetailsDTO;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.model.User;
 import com.musicapp.music_app.repositories.UserRepository;
@@ -156,5 +157,13 @@ public class UserService {
         map.put("filename", decryptedFilename);
         map.put("file", resource);
         return map;
+    }
+
+    public UserMetaDetailsDTO getUserMetaDetails() {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user  = findByUserName(userName);
+        UserMetaDetailsDTO response = new UserMetaDetailsDTO();
+        response.setFullName(user.getFullName());
+        return response;
     }
 }

@@ -1,5 +1,6 @@
 package com.musicapp.music_app.controllers;
 
+import com.musicapp.music_app.DTO.Response.User.UserMetaDetailsDTO;
 import com.musicapp.music_app.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -42,6 +43,23 @@ public class UserController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + decryptedProfileImage.get("filename") + "\"") // Set appropriate filename here
                     .body(decryptedProfileImage.get("file"));
 
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Operation(summary = "Retrieve user details.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User details extracted successfully"),
+            @ApiResponse(responseCode = "404", description = "User details not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while finding user details")
+    })
+    @GetMapping(value = "/details", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getUserMetaDetails() {
+        try {
+            UserMetaDetailsDTO response = userService.getUserMetaDetails();
+            return ResponseEntity.ok().body(response);
         } catch (Exception e) {
             System.out.println(e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
