@@ -6,7 +6,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
 
-public interface PlaylistRepository extends MongoRepository<Playlist, String> {
-    // Custom query to find playlists by their protected status
-    List<Playlist> findByProtectedPlaylist(boolean protectedPlaylist);
+public interface PlaylistRepository extends MongoRepository<Playlist, ObjectId> {
+
 }
