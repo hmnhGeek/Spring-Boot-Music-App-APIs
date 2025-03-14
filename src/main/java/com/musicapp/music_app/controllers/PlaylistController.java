@@ -61,8 +61,9 @@ public class PlaylistController {
             @ApiResponse(responseCode = "500", description = "Internal server error while adding the song")
     })
     @PostMapping(value = "/add-to-playlist", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Playlist addSongToPlaylist(@RequestBody AddSongToPlaylistRequestDTO addSongToPlaylistRequestDTO, String playlistId) {
-        return playlistService.addSongToPlaylist(addSongToPlaylistRequestDTO, playlistId);
+    public void addSongToPlaylist(@RequestBody AddSongToPlaylistRequestDTO addSongToPlaylistRequestDTO, String playlistId) {
+        List<String> songIds = addSongToPlaylistRequestDTO.getSongIds();
+        songIds.forEach(songId -> playlistService.addSongToPlaylist(songId, playlistId));
     }
 
 //    @Operation(summary = "Get all playlists")

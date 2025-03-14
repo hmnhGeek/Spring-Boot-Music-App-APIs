@@ -1,10 +1,6 @@
 package com.musicapp.music_app.services;
 
 import DTOs.requests.AddPlaylistRequestDTO;
-import DTOs.requests.AddSongToPlaylistRequestDTO;
-import DTOs.requests.PasswordRequestDTO;
-import DTOs.responses.PlaylistResponseDTO;
-import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Playlist;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.model.User;
@@ -21,7 +17,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.SecretKey;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class PlaylistService {
@@ -63,19 +58,18 @@ public class PlaylistService {
         return finalSavedPlaylist;
     }
 
-    public Playlist addSongToPlaylist(AddSongToPlaylistRequestDTO addSongToPlaylistRequestDTO, String playlistId) {
-        Optional<Song> song = songRepository.findById(addSongToPlaylistRequestDTO.getSongId());
+    public void addSongToPlaylist(String songId, String playlistId) {
+        Optional<Song> song = songRepository.findById(songId);
         if (song.isEmpty()) {
-            return null;
+            return;
         }
         Song mainSong = song.get();
         Optional<Playlist> playlist = playlistRepository.findById(new ObjectId(playlistId));
         if (playlist.isEmpty()) {
-            return null;
+            return;
         }
         Playlist mainPlaylist = playlist.get();
         mainPlaylist.getSongs().add(mainSong);
-        Playlist updatedPlaylist = playlistRepository.save(mainPlaylist);
-        return updatedPlaylist;
+        playlistRepository.save(mainPlaylist);
     }
 }
