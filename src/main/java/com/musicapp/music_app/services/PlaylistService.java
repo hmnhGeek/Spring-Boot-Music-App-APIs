@@ -72,4 +72,14 @@ public class PlaylistService {
         mainPlaylist.getSongs().add(mainSong);
         playlistRepository.save(mainPlaylist);
     }
+
+    public void removeSongFromPlaylist(String playlistId, String songId) {
+        Optional<Playlist> playlist = playlistRepository.findById(new ObjectId(playlistId));
+        if (playlist.isEmpty()) {
+            return;
+        }
+        Playlist mainPlaylist = playlist.get();
+        mainPlaylist.getSongs().removeIf(x -> x.getId().equals(songId));
+        playlistRepository.save(mainPlaylist);
+    }
 }

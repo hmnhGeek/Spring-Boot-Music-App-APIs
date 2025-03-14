@@ -93,18 +93,17 @@ public class PlaylistController {
 //        return ResponseEntity.ok().body(songs);
 //    }
 //
-//    @Operation(summary = "Remove a song from a playlist")
-//    @ApiResponses(value = {
-//            @ApiResponse(responseCode = "201", description = "Song removed successfully"),
-//            @ApiResponse(responseCode = "500", description = "Internal server error while removing song")
-//    })
-//    @DeleteMapping("/remove-song/{playlistId}/{songId}")
-//    public Playlist removeSongFromPlaylist(
-//            @RequestParam(defaultValue = "") String password,
-//            @PathVariable String playlistId,
-//            @PathVariable String songId) {
-//        return playlistService.removeSongFromPlaylist(playlistId, songId, password);
-//    }
+    @Operation(summary = "Remove a song from a playlist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Song removed successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while removing song")
+    })
+    @DeleteMapping("/remove-song/{playlistId}/{songId}")
+    public void removeSongFromPlaylist(
+            @PathVariable String playlistId,
+            @PathVariable String songId) {
+        playlistService.removeSongFromPlaylist(playlistId, songId);
+    }
 //
 //    @Operation(summary = "Remove a playlist")
 //    @ApiResponses(value = {
