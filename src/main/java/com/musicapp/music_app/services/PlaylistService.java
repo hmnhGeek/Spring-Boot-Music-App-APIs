@@ -82,4 +82,10 @@ public class PlaylistService {
         mainPlaylist.getSongs().removeIf(x -> x.getId().equals(songId));
         playlistRepository.save(mainPlaylist);
     }
+
+    public List<Playlist> getAllPlaylists() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(username);
+        return user.getPlaylists();
+    }
 }

@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -103,6 +104,16 @@ public class PlaylistController {
             @PathVariable String playlistId,
             @PathVariable String songId) {
         playlistService.removeSongFromPlaylist(playlistId, songId);
+    }
+
+    @Operation(summary = "Get all playlists")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Fetched all playlists"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while fetching playlists")
+    })
+    @GetMapping
+    public List<Playlist> getAllPlaylists() {
+        return playlistService.getAllPlaylists();
     }
 //
 //    @Operation(summary = "Remove a playlist")
