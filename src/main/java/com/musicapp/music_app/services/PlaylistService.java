@@ -32,6 +32,9 @@ public class PlaylistService {
     private UserRepository userRepository;
 
     @Autowired
+    private SongRepository songRepository;
+
+    @Autowired
     private CredentialService credentialService;
 
     private static final String PLAYLISTS_COVER_IMAGE_FOLDER = "playlist_covers";
@@ -58,5 +61,21 @@ public class PlaylistService {
         userRepository.save(user);
 
         return finalSavedPlaylist;
+    }
+
+    public Playlist addSongToPlaylist(AddSongToPlaylistRequestDTO addSongToPlaylistRequestDTO, String playlistId) {
+        Optional<Song> song = songRepository.findById(addSongToPlaylistRequestDTO.getSongId());
+        if (song.isEmpty()) {
+            return null;
+        }
+        Song mainSong = song.get();
+        Optional<Playlist> playlist = playlistRepository.findById(new ObjectId(playlistId));
+        if (playlist.isEmpty()) {
+            return null;
+        }
+        Playlist mainPlaylist = playlist.get();
+        mainPlaylist.getSongs().add(mainSong);
+        Playlist updatedPlaylist = playlistRepository.save(mainPlaylist);
+        return updatedPlaylist;
     }
 }

@@ -55,16 +55,16 @@ public class PlaylistController {
         }
     }
 
-//    @Operation(summary = "Add song to a playlist")
-//    @ApiResponses(value = {
-//            @ApiResponse(responseCode = "201", description = "Song added successfully"),
-//            @ApiResponse(responseCode = "500", description = "Internal server error while adding the song")
-//    })
-//    @PostMapping(value = "/add-to-playlist", produces = MediaType.APPLICATION_JSON_VALUE)
-//    public Playlist addSongToPlaylist(@RequestBody AddSongToPlaylistRequestDTO addSongToPlaylistRequestDTO) {
-//        return playlistService.addSongToPlaylist(addSongToPlaylistRequestDTO);
-//    }
-//
+    @Operation(summary = "Add song to a playlist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Song added successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while adding the song")
+    })
+    @PostMapping(value = "/add-to-playlist", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Playlist addSongToPlaylist(@RequestBody AddSongToPlaylistRequestDTO addSongToPlaylistRequestDTO, String playlistId) {
+        return playlistService.addSongToPlaylist(addSongToPlaylistRequestDTO, playlistId);
+    }
+
 //    @Operation(summary = "Get all playlists")
 //    @ApiResponses(value = {
 //            @ApiResponse(responseCode = "201", description = "Playlists fetched successfully"),
