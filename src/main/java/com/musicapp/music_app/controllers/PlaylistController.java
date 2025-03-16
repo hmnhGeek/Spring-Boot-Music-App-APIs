@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -125,17 +127,31 @@ public class PlaylistController {
     public void removePlaylist(@PathVariable String playlistId) {
         playlistService.removePlaylist(playlistId);
     }
-//
-//    @Operation(summary = "Remove a playlist")
-//    @ApiResponses(value = {
-//            @ApiResponse(responseCode = "201", description = "Playlist deleted successfully"),
-//            @ApiResponse(responseCode = "500", description = "Internal server error while deleting playlist")
-//    })
-//    @DeleteMapping("/delete-playlist/{playlistId}")
-//    public void deletePlaylist(
-//            @RequestParam(defaultValue = "") String password,
-//            @PathVariable String playlistId
-//    ) {
-//        playlistService.deletePlaylist(playlistId, password);
-//    }
+
+    @Operation(summary = "Retrieve and decrypt playlist cover image by its MongoDB ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cover image retrieved and decrypted successfully"),
+            @ApiResponse(responseCode = "404", description = "Cover image not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while decrypting the cover image")
+    })
+    @GetMapping(value = "/cover-image/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<?> getCoverImageByIdAndDecrypt(@PathVariable("id") String playlistId) {
+        try {
+            // Delegate to service for retrieving and decrypting the cover image
+            HashMap<String, Object> decryptedCoverFile = playlistService.getDecryptedCoverById(playlistId);
+
+            if (decryptedCoverFile == null) {
+                return new ResponseEntity<>("Cover image not found or decryption failed", HttpStatus.NOT_FOUND);
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + decryptedCoverFile.get("filename") + "\"") // Set appropriate filename here
+                    .body(decryptedCoverFile.get("file"));
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

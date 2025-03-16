@@ -29,6 +29,8 @@ public class Playlist {
 
     private String coverImagePath;
 
+    private String coverImageName;
+
     private String coverImageExtension;
 
     private String description;

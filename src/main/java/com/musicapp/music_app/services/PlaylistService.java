@@ -11,6 +11,8 @@ import com.musicapp.music_app.utils.EncryptionManagement;
 import com.musicapp.music_app.utils.FileManagementUtility;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +47,7 @@ public class PlaylistService {
         savedPlaylist.setTitle(addPlaylistRequestDTO.getTitle());
         savedPlaylist.setDescription(addPlaylistRequestDTO.getDescription());
         savedPlaylist.setCoverImagePath(coverImagePath);
+        savedPlaylist.setCoverImageName(coverImageDetails.get(0));
         savedPlaylist.setCoverImageExtension(coverImageDetails.get(1));
         savedPlaylist.setEncryptionKey(Base64.getEncoder().encodeToString(encryptionKey.getEncoded()));
         Playlist finalSavedPlaylist = playlistRepository.save(savedPlaylist);
@@ -104,5 +107,38 @@ public class PlaylistService {
         FileManagementUtility.deleteFiles(playlist.getCoverImagePath());
 
         userRepository.save(user);
+    }
+
+    public HashMap<String, Object> getDecryptedCoverById(String playlistId) throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        User user = userRepository.findByUserName(authentication.getName());
+        List<Playlist> playlists = user.getPlaylists().stream().filter(x -> x.getId().equals(new ObjectId(playlistId))).toList();
+
+        if (playlists.isEmpty()) {
+            return null; // Return null if the song is not found
+        }
+
+        Playlist playlist = playlists.get(0);
+
+        // Decode the encryption key
+        String encryptionKeyBase64 = playlist.getEncryptionKey();
+        SecretKey encryptionKey = EncryptionManagement.getSecretKeyFromBase64(encryptionKeyBase64);
+
+        // Decrypt the song file using the encryption key
+        byte[] decryptedData = EncryptionManagement.decryptFile(playlist.getCoverImagePath(), encryptionKey);
+
+        String originalFilename = playlist.getCoverImageName();
+        String originalExtension = playlist.getCoverImageExtension();
+        String decryptedFilename = originalFilename + "." + originalExtension;
+
+        // Prepare the ByteArrayResource to send back the decrypted file as a blob
+        ByteArrayResource resource = new ByteArrayResource(decryptedData);
+
+        // Return the decrypted file as a response entity with the appropriate headers
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("filename", decryptedFilename);
+        map.put("file", resource);
+        return map;
     }
 }
