@@ -88,4 +88,21 @@ public class PlaylistService {
         User user = userRepository.findByUserName(username);
         return user.getPlaylists();
     }
+
+    public void removePlaylist(String playlistId) {
+        Optional<Playlist> playlistBox = playlistRepository.findById(new ObjectId(playlistId));
+        if (playlistBox.isEmpty()) {
+            return;
+        }
+        Playlist playlist = playlistBox.get();
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(username);
+        user.getPlaylists().removeIf(x -> x.getId().equals(playlist.getId()));
+
+        playlistRepository.deleteById(playlist.getId());
+        FileManagementUtility.deleteFiles(playlist.getCoverImagePath());
+
+        userRepository.save(user);
+    }
 }

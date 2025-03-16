@@ -115,6 +115,16 @@ public class PlaylistController {
     public List<Playlist> getAllPlaylists() {
         return playlistService.getAllPlaylists();
     }
+
+    @Operation(summary = "Delete a playlist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Playlist deleted successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while deleting song")
+    })
+    @DeleteMapping("/{playlistId}")
+    public void removePlaylist(@PathVariable String playlistId) {
+        playlistService.removePlaylist(playlistId);
+    }
 //
 //    @Operation(summary = "Remove a playlist")
 //    @ApiResponses(value = {
