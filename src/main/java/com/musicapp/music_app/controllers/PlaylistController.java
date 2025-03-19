@@ -2,32 +2,25 @@ package com.musicapp.music_app.controllers;
 
 import DTOs.requests.AddPlaylistRequestDTO;
 import DTOs.requests.AddSongToPlaylistRequestDTO;
-import DTOs.requests.PasswordRequestDTO;
-import DTOs.responses.PlaylistResponseDTO;
-import DTOs.responses.SongsListItem;
-import com.musicapp.music_app.DTO.Requests.User.CreateUserRequestDTO;
+import com.musicapp.music_app.DTO.Response.Playlists.PlaylistResponseDTO;
 import com.musicapp.music_app.model.Playlist;
-import com.musicapp.music_app.model.Song;
-import com.musicapp.music_app.model.User;
-import com.musicapp.music_app.services.CredentialService;
 //import com.musicapp.music_app.services.PlaylistService;
 import com.musicapp.music_app.services.PlaylistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/playlists")
@@ -114,8 +107,16 @@ public class PlaylistController {
             @ApiResponse(responseCode = "500", description = "Internal server error while fetching playlists")
     })
     @GetMapping
-    public List<Playlist> getAllPlaylists() {
-        return playlistService.getAllPlaylists();
+    public List<PlaylistResponseDTO> getAllPlaylists() {
+        List<Playlist> allPlaylists = playlistService.getAllPlaylists();
+        return allPlaylists.stream().map(playlist -> {
+            PlaylistResponseDTO item = new PlaylistResponseDTO();
+            item.setId(playlist.getId().toString());
+            item.setTitle(playlist.getTitle());
+            item.setDescription(playlist.getDescription());
+            item.setTotalSongs(playlist.getSongs().size());
+            return item;
+        }).toList();
     }
 
     @Operation(summary = "Delete a playlist")
