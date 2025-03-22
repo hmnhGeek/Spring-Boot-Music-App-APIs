@@ -2,9 +2,11 @@ package com.musicapp.music_app.controllers;
 
 import DTOs.requests.AddPlaylistRequestDTO;
 import DTOs.requests.AddSongToPlaylistRequestDTO;
+import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.DTO.Response.Playlists.PlaylistResponseDTO;
 import com.musicapp.music_app.model.Playlist;
 //import com.musicapp.music_app.services.PlaylistService;
+import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.services.PlaylistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -149,6 +151,25 @@ public class PlaylistController {
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + decryptedCoverFile.get("filename") + "\"") // Set appropriate filename here
                     .body(decryptedCoverFile.get("file"));
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Operation(summary = "Retrieve songs from a playlist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Songs retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Songs not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while retrieving songs")
+    })
+    @GetMapping(value = "/songs/{playlistId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getSongsFromPlaylist(@PathVariable("playlistId") String playlistId) {
+        try {
+            // Delegate to service for retrieving and decrypting the cover image
+            List<SongsListItem> songs = playlistService.getSongs(playlistId);
+            return ResponseEntity.ok().body(songs);
 
         } catch (Exception e) {
             System.out.println(e.getMessage());

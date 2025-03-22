@@ -1,6 +1,7 @@
 package com.musicapp.music_app.services;
 
 import DTOs.requests.AddPlaylistRequestDTO;
+import DTOs.responses.SongsListItem;
 import com.musicapp.music_app.model.Playlist;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.model.User;
@@ -107,6 +108,26 @@ public class PlaylistService {
         FileManagementUtility.deleteFiles(playlist.getCoverImagePath());
 
         userRepository.save(user);
+    }
+
+    public List<SongsListItem> getSongs(String playlistId) {
+        ObjectId id = new ObjectId(playlistId);
+        Optional<Playlist> box = playlistRepository.findById(id);
+        if (box.isEmpty()) {
+            return null;
+        }
+        Playlist playlist = box.get();
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(username);
+        if (user.getPlaylists().stream().filter(x -> x.getId().equals(playlist.getId())).toList().isEmpty()) {
+            return null;
+        }
+        return playlist.getSongs().stream().map(x -> {
+            SongsListItem song = new SongsListItem();
+            song.setId(x.getId());
+            song.setOriginalName(x.getOriginalName());
+            return song;
+        }).toList();
     }
 
     public HashMap<String, Object> getDecryptedCoverById(String playlistId) throws Exception {
