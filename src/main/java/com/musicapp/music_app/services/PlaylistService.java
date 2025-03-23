@@ -73,7 +73,9 @@ public class PlaylistService {
             return;
         }
         Playlist mainPlaylist = playlist.get();
-        mainPlaylist.getSongs().add(mainSong);
+        if (!mainPlaylist.getSongs().contains(mainSong)) {
+            mainPlaylist.getSongs().add(mainSong);
+        }
         playlistRepository.save(mainPlaylist);
     }
 
