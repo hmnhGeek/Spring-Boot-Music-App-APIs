@@ -3,9 +3,9 @@ package DTOs.requests;
 import lombok.Data;
 import org.bson.types.ObjectId;
 
+import java.util.List;
+
 @Data
 public class AddSongToPlaylistRequestDTO {
-    private String playlistId;
-    private String songId;
-    private String password;
+    private List<String> songIds;
 }

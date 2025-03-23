@@ -1,194 +1,167 @@
-//package com.musicapp.music_app.services;
-//
-//import DTOs.requests.AddPlaylistRequestDTO;
-//import DTOs.requests.AddSongToPlaylistRequestDTO;
-//import DTOs.requests.PasswordRequestDTO;
-//import DTOs.responses.PlaylistResponseDTO;
-//import DTOs.responses.SongsListItem;
-//import com.musicapp.music_app.model.Playlist;
-//import com.musicapp.music_app.model.Song;
-//import com.musicapp.music_app.repositories.PlaylistRepository;
-//import com.musicapp.music_app.repositories.SongRepository;
-//import org.bson.types.ObjectId;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.stereotype.Service;
-//
-//import java.util.ArrayList;
-//import java.util.List;
-//import java.util.Objects;
-//import java.util.Optional;
-//import java.util.stream.Collectors;
-//
-//@Service
-//public class PlaylistService {
-//    @Autowired
-//    private PlaylistRepository playlistRepository;
-//
-//    @Autowired
-//    private SongRepository songRepository;
-//
-//    @Autowired
-//    private CredentialService credentialService;
-//
-//    private boolean unauthorizedAccessToPlaylist(String playlistId, String encodedPassword) {
-//        Optional<Playlist> optionalPlaylist = playlistRepository.findById(playlistId);
-//        if (optionalPlaylist.isEmpty()) {
-//            return true;
-//        }
-//        Playlist playlist = optionalPlaylist.get();
-//        PasswordRequestDTO passwordRequestDTO = new PasswordRequestDTO();
-//        passwordRequestDTO.setEncodedPassword(encodedPassword);
-//        return playlist.isProtectedPlaylist() && !credentialService.isValidPassword(passwordRequestDTO);
-//    }
-//
-//    public Playlist createPlaylist(AddPlaylistRequestDTO addPlaylistRequestDTO) {
-//        String name = addPlaylistRequestDTO.getPlaylistName();
-//        List<String> songIds = new ArrayList<>();
-//        Boolean isProtected = addPlaylistRequestDTO.getIsProtected();
-//        Playlist playlist = new Playlist(name, songIds, isProtected);
-//        return playlistRepository.save(playlist);
-//    }
-//
-//    public Playlist addSongToPlaylist(AddSongToPlaylistRequestDTO addSongToPlaylistRequestDTO) {
-//        String playlistId = addSongToPlaylistRequestDTO.getPlaylistId();
-//        String encodedPassword = addSongToPlaylistRequestDTO.getPassword();
-//
-//        if(unauthorizedAccessToPlaylist(playlistId, encodedPassword)) {
-//            throw new RuntimeException("User not authorized to view playlist with ID: " + playlistId);
-//        }
-//
-//        String songId = addSongToPlaylistRequestDTO.getSongId();
-//
-//        // Fetch the playlist by its ID
-//        Optional<Playlist> playlistOptional = playlistRepository.findById(playlistId);
-//
-//        if (!playlistOptional.isPresent()) {
-//            throw new RuntimeException("Playlist not found with id: " + playlistId);
-//        }
-//
-//        // Fetch the song by its ID (assuming you have a Song repository or service to fetch song details)
-//        Optional<Song> songOptional = songRepository.findById(songId);  // You need to create this logic
-//        if (!songOptional.isPresent()) {
-//            throw new RuntimeException("Song not found with id: " + songId);
-//        }
-//
-//        Song song = songOptional.get();
-//        Playlist playlist = playlistOptional.get();
-//
-//        // Check protection conditions
-//        if ((song.isVaultProtected() && !playlist.isProtectedPlaylist()) ||
-//                (!song.isVaultProtected() && playlist.isProtectedPlaylist())) {
-//            throw new RuntimeException("Cannot add this song to the playlist due to protection mismatch.");
-//        }
-//
-//        // Check if the song is already in the playlist
-//        if (playlist.getSongIds().contains(songId)) {
-//            throw new RuntimeException("Song already present in the playlist.");
-//        }
-//
-//        // Add songId to the list of songs in the playlist
-//        playlist.getSongIds().add(songId);
-//
-//        // Save the updated playlist back to the database
-//        return playlistRepository.save(playlist);
-//    }
-//
-//
-//    public List<PlaylistResponseDTO> getAllPlaylists(Boolean protectedStatus) {
-//        List<Playlist> playlists;
-//
-//        // If protectedStatus is null, fetch only playlists where protectedPlaylist is false
-//        if (protectedStatus == null) {
-//            playlists = playlistRepository.findByProtectedPlaylist(false);
-//        } else {
-//            // Fetch playlists based on the provided protectedStatus (true or false)
-//            playlists = playlistRepository.findByProtectedPlaylist(protectedStatus);
-//        }
-//
-//        // Map the playlists to DTOs
-//        return playlists.stream()
-//                .map(playlist -> new PlaylistResponseDTO(playlist.getId(), playlist.getName(), playlist.isProtectedPlaylist()))
-//                .collect(Collectors.toList());
-//    }
-//
-//    public List<SongsListItem> getAllSongsInPlaylists(String playlistId, String password) {
-//        if(unauthorizedAccessToPlaylist(playlistId, password)) {
-//            throw new RuntimeException("User not authorized to view playlist with ID: " + playlistId);
-//        }
-//
-//        // Fetch the playlist by its ID
-//        Optional<Playlist> playlistOptional = playlistRepository.findById(playlistId);
-//
-//        if (!playlistOptional.isPresent()) {
-//            throw new RuntimeException("Playlist not found with id: " + playlistId);
-//        }
-//
-//        Playlist playlist = playlistOptional.get();
-//        List<String> songIds = playlist.getSongIds();
-//
-//        // Remove stale song IDs that don't exist in the system
-//        List<String> validSongIds = songIds.stream()
-//                .filter(songId -> songRepository.findById(songId).isPresent())  // Only keep valid IDs
-//                .collect(Collectors.toList());
-//
-//        // Update the playlist with the valid song IDs
-//        playlist.setSongIds(validSongIds);
-//        playlistRepository.save(playlist);  // Save the updated playlist
-//
-//        // Fetch the valid songs from the repository
-//
-//        return validSongIds.stream().map(songId -> {
-//            Optional<Song> song = songRepository.findById(songId);
-//            SongsListItem item = new SongsListItem();
-//            song.ifPresent(value -> {
-//                item.setOriginalName(value.getOriginalName());
-//                item.setId(value.getId());
-//            });
-//            return item;
-//        }).collect(Collectors.toList());
-//    }
-//
-//
-//    public Playlist removeSongFromPlaylist(String playlistId, String songId, String password) {
-//        if (unauthorizedAccessToPlaylist(playlistId, password)) {
-//            throw new RuntimeException("User not authorized to view playlist with ID: " + playlistId);
-//        }
-//
-//        // Fetch the playlist by its ID
-//        Optional<Playlist> playlistOptional = playlistRepository.findById(playlistId);
-//
-//        if (!playlistOptional.isPresent()) {
-//            throw new RuntimeException("Playlist not found with id: " + playlistId);
-//        }
-//
-//        Playlist playlist = playlistOptional.get();
-//        List<String> songIds = playlist.getSongIds();
-//
-//        // Check if the songId exists in the playlist
-//        if (songIds.contains(songId)) {
-//            // Remove the songId from the playlist
-//            songIds.remove(songId);
-//
-//            // Update the playlist and save it
-//            playlist.setSongIds(songIds);
-//            return playlistRepository.save(playlist);
-//        } else {
-//            throw new RuntimeException("Song with id " + songId + " not found in the playlist.");
-//        }
-//    }
-//
-//    public void deletePlaylist(String playlistId, String password) {
-//        if (unauthorizedAccessToPlaylist(playlistId, password)) {
-//            throw new RuntimeException("User not authorized to delete playlist with ID: " + playlistId);
-//        }
-//
-//        // Check if the playlist exists
-//        Optional<Playlist> playlistOptional = playlistRepository.findById(playlistId);
-//        if (!playlistOptional.isPresent()) {
-//            throw new RuntimeException("Playlist not found with id: " + playlistId);
-//        }
-//
-//        // Remove the playlist
-//        playlistRepository.deleteById(playlistId);
-//    }
-//}
+package com.musicapp.music_app.services;
+
+import DTOs.requests.AddPlaylistRequestDTO;
+import DTOs.responses.SongsListItem;
+import com.musicapp.music_app.model.Playlist;
+import com.musicapp.music_app.model.Song;
+import com.musicapp.music_app.model.User;
+import com.musicapp.music_app.repositories.PlaylistRepository;
+import com.musicapp.music_app.repositories.SongRepository;
+import com.musicapp.music_app.repositories.UserRepository;
+import com.musicapp.music_app.utils.EncryptionManagement;
+import com.musicapp.music_app.utils.FileManagementUtility;
+import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.crypto.SecretKey;
+import java.util.*;
+
+@Service
+public class PlaylistService {
+    @Autowired
+    private PlaylistRepository playlistRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private SongRepository songRepository;
+
+    @Autowired
+    private CredentialService credentialService;
+
+    private static final String PLAYLISTS_COVER_IMAGE_FOLDER = "playlist_covers";
+
+    public Playlist createPlaylist(AddPlaylistRequestDTO addPlaylistRequestDTO, MultipartFile coverImage) throws Exception {
+        FileManagementUtility.createFolderIfNotExists(PLAYLISTS_COVER_IMAGE_FOLDER);
+
+        List<String> coverImageDetails = FileManagementUtility.getFilenameAndExtension(Objects.requireNonNull(coverImage.getOriginalFilename()));
+        SecretKey encryptionKey = EncryptionManagement.generateEncryptionKey();
+        String coverImagePath = EncryptionManagement.saveEncryptedFile(coverImage.getInputStream(), PLAYLISTS_COVER_IMAGE_FOLDER, encryptionKey);
+
+        Playlist savedPlaylist = new Playlist();
+        savedPlaylist.setTitle(addPlaylistRequestDTO.getTitle());
+        savedPlaylist.setDescription(addPlaylistRequestDTO.getDescription());
+        savedPlaylist.setCoverImagePath(coverImagePath);
+        savedPlaylist.setCoverImageName(coverImageDetails.get(0));
+        savedPlaylist.setCoverImageExtension(coverImageDetails.get(1));
+        savedPlaylist.setEncryptionKey(Base64.getEncoder().encodeToString(encryptionKey.getEncoded()));
+        Playlist finalSavedPlaylist = playlistRepository.save(savedPlaylist);
+
+        // adding the playlist into user's collection.
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(userName);
+        user.getPlaylists().add(finalSavedPlaylist);
+        userRepository.save(user);
+
+        return finalSavedPlaylist;
+    }
+
+    public void addSongToPlaylist(String songId, String playlistId) {
+        Optional<Song> song = songRepository.findById(songId);
+        if (song.isEmpty()) {
+            return;
+        }
+        Song mainSong = song.get();
+        Optional<Playlist> playlist = playlistRepository.findById(new ObjectId(playlistId));
+        if (playlist.isEmpty()) {
+            return;
+        }
+        Playlist mainPlaylist = playlist.get();
+        if (!mainPlaylist.getSongs().contains(mainSong)) {
+            mainPlaylist.getSongs().add(mainSong);
+        }
+        playlistRepository.save(mainPlaylist);
+    }
+
+    public void removeSongFromPlaylist(String playlistId, String songId) {
+        Optional<Playlist> playlist = playlistRepository.findById(new ObjectId(playlistId));
+        if (playlist.isEmpty()) {
+            return;
+        }
+        Playlist mainPlaylist = playlist.get();
+        mainPlaylist.getSongs().removeIf(x -> x.getId().equals(songId));
+        playlistRepository.save(mainPlaylist);
+    }
+
+    public List<Playlist> getAllPlaylists() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(username);
+        return user.getPlaylists();
+    }
+
+    public void removePlaylist(String playlistId) {
+        Optional<Playlist> playlistBox = playlistRepository.findById(new ObjectId(playlistId));
+        if (playlistBox.isEmpty()) {
+            return;
+        }
+        Playlist playlist = playlistBox.get();
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(username);
+        user.getPlaylists().removeIf(x -> x.getId().equals(playlist.getId()));
+
+        playlistRepository.deleteById(playlist.getId());
+        FileManagementUtility.deleteFiles(playlist.getCoverImagePath());
+
+        userRepository.save(user);
+    }
+
+    public List<SongsListItem> getSongs(String playlistId) {
+        ObjectId id = new ObjectId(playlistId);
+        Optional<Playlist> box = playlistRepository.findById(id);
+        if (box.isEmpty()) {
+            return null;
+        }
+        Playlist playlist = box.get();
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(username);
+        if (user.getPlaylists().stream().filter(x -> x.getId().equals(playlist.getId())).toList().isEmpty()) {
+            return null;
+        }
+        return playlist.getSongs().stream().map(x -> {
+            SongsListItem song = new SongsListItem();
+            song.setId(x.getId());
+            song.setOriginalName(x.getOriginalName());
+            return song;
+        }).toList();
+    }
+
+    public HashMap<String, Object> getDecryptedCoverById(String playlistId) throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        User user = userRepository.findByUserName(authentication.getName());
+        List<Playlist> playlists = user.getPlaylists().stream().filter(x -> x.getId().equals(new ObjectId(playlistId))).toList();
+
+        if (playlists.isEmpty()) {
+            return null; // Return null if the song is not found
+        }
+
+        Playlist playlist = playlists.get(0);
+
+        // Decode the encryption key
+        String encryptionKeyBase64 = playlist.getEncryptionKey();
+        SecretKey encryptionKey = EncryptionManagement.getSecretKeyFromBase64(encryptionKeyBase64);
+
+        // Decrypt the song file using the encryption key
+        byte[] decryptedData = EncryptionManagement.decryptFile(playlist.getCoverImagePath(), encryptionKey);
+
+        String originalFilename = playlist.getCoverImageName();
+        String originalExtension = playlist.getCoverImageExtension();
+        String decryptedFilename = originalFilename + "." + originalExtension;
+
+        // Prepare the ByteArrayResource to send back the decrypted file as a blob
+        ByteArrayResource resource = new ByteArrayResource(decryptedData);
+
+        // Return the decrypted file as a response entity with the appropriate headers
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("filename", decryptedFilename);
+        map.put("file", resource);
+        return map;
+    }
+}

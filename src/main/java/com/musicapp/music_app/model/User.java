@@ -48,6 +48,9 @@ public class User {
     @DBRef
     private List<Song> songs = new ArrayList<>();
 
+    @DBRef
+    private List<Playlist> playlists = new ArrayList<>();
+
     // to be used in Spring Security.
     private List<String> roles = new ArrayList<>();
 }

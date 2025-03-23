@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class AddPlaylistRequestDTO {
-    private String playlistName;
-    private Boolean isProtected;
+    private String title;
+    private String description;
 }

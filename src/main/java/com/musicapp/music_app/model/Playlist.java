@@ -1,56 +1,39 @@
 package com.musicapp.music_app.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.annotation.Id;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Document(collection = "playlists")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Playlist {
 
     @Id
-    private String id;
-    private String name;
-    private List<String> songIds;
-    private boolean protectedPlaylist;  // New field
+    private ObjectId id;
 
-    // Constructors, getters, and setters
+    @DBRef
+    private List<Song> songs = new ArrayList<>();
 
-    public Playlist(String name, List<String> songIds, boolean protectedPlaylist) {
-        this.name = name;
-        this.songIds = songIds;
-        this.protectedPlaylist = protectedPlaylist;
-    }
+    private String encryptionKey;
 
-    public String getId() {
-        return id;
-    }
+    private String coverImagePath;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    private String coverImageName;
 
-    public String getName() {
-        return name;
-    }
+    private String coverImageExtension;
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    private String description;
 
-    public List<String> getSongIds() {
-        return songIds;
-    }
-
-    public void setSongIds(List<String> songIds) {
-        this.songIds = songIds;
-    }
-
-    public boolean isProtectedPlaylist() {
-        return protectedPlaylist;
-    }
-
-    public void setProtectedPlaylist(boolean protectedPlaylist) {
-        this.protectedPlaylist = protectedPlaylist;
-    }
+    private String title;
 }
