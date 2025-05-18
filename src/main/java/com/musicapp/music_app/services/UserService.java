@@ -5,6 +5,7 @@ import com.musicapp.music_app.DTO.Response.User.UserMetaDetailsDTO;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.model.User;
 import com.musicapp.music_app.repositories.UserRepository;
+import com.musicapp.music_app.repositories.criteria.UserRepositoryImpl;
 import com.musicapp.music_app.utils.EncryptionManagement;
 import com.musicapp.music_app.utils.FileManagementUtility;
 import org.bson.types.ObjectId;
@@ -26,6 +27,9 @@ import java.util.*;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserRepositoryImpl userRepositoryImpl;
 
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -165,5 +169,10 @@ public class UserService {
         UserMetaDetailsDTO response = new UserMetaDetailsDTO();
         response.setFullName(user.getFullName());
         return response;
+    }
+
+    public List<User> getUsersHavingPlaylists() {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepositoryImpl.getUsersHavingPlaylists(userName);
     }
 }

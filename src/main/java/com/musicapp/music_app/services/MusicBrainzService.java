@@ -1,6 +1,7 @@
 package com.musicapp.music_app.services;
 
 import com.musicapp.music_app.DTO.Response.MusicBrainz.RecordingResponse;
+import com.musicapp.music_app.config.AppCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
@@ -13,12 +14,12 @@ public class MusicBrainzService {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${api.base}")
-    private String musicBrainzApiBase;
+    @Autowired
+    private AppCache appCache;
 
     public RecordingResponse getMetaDataByTitle(String title) {
         ResponseEntity<RecordingResponse> response = restTemplate.exchange(
-                String.format(musicBrainzApiBase, title),
+                String.format(appCache.getAppCache().get("MUSICBRAINZ_URL"), title),
                 HttpMethod.GET,
                 null,
                 RecordingResponse.class
