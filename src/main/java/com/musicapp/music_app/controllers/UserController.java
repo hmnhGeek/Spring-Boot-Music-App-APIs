@@ -1,6 +1,7 @@
 package com.musicapp.music_app.controllers;
 
 import com.musicapp.music_app.DTO.Response.User.UserMetaDetailsDTO;
+import com.musicapp.music_app.model.User;
 import com.musicapp.music_app.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -60,6 +62,26 @@ public class UserController {
         try {
             UserMetaDetailsDTO response = userService.getUserMetaDetails();
             return ResponseEntity.ok().body(response);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Operation(summary = "Retrieve users having non-empty playlists.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User details extracted successfully"),
+            @ApiResponse(responseCode = "404", description = "User details not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error while finding user details")
+    })
+    @GetMapping(value = "/users-having-playlists", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getUsersHavingPlaylists() {
+        try {
+            List<User> users = userService.getUsersHavingPlaylists();
+            if (users == null) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+            return ResponseEntity.ok().body(users);
         } catch (Exception e) {
             System.out.println(e.getMessage());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
