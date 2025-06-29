@@ -39,6 +39,16 @@ public class SlidesService {
         return user.getSongs().contains(song);
     }
 
+    private boolean userHasAccessToSlide(String slideId) {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(userName);
+        if (user == null) {
+            throw new RuntimeException("User not found: " + userName);
+        }
+        Slide slide = findById(slideId);
+        return user.getSlides().contains(slide);
+    }
+
     public void addSlidesByUrls(List<String> urls) {
         try {
             String userName = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -69,13 +79,13 @@ public class SlidesService {
         }
     }
 
-    public void deleteSlideById(String slideId) {
+    public int deleteSlideById(String slideId) {
         try {
             Slide slide = findById(slideId);
             if (slide == null) {
-                throw new RuntimeException("Slide not found with ID: " + slideId);
+                return 0;
             }
-
+            if (!userHasAccessToSlide(slideId)) return -1;
             String userName = SecurityContextHolder.getContext().getAuthentication().getName();
             User user = userRepository.findByUserName(userName);
             if (user == null) {
@@ -88,6 +98,7 @@ public class SlidesService {
 
             userRepository.save(user);
             mongoTemplate.remove(slide);
+            return 1;
         } catch (Exception e) {
             throw new RuntimeException("Error deleting slide with ID: " + slideId, e);
         }
@@ -187,17 +198,16 @@ public class SlidesService {
         return 1;
     }
 
-    public void removeSlidesFromSong(String songId, List<String> slideIds) {
-        Optional<Song> optionalSong = songRepository.findById(songId);
-        if (optionalSong.isEmpty()) return;
-        Song song = optionalSong.get();
+    public int removeSlidesFromSong(String songId, List<String> slideIds) {
+        if (!userHasAccessToSong(songId)) return -1;
         slideIds.forEach(id -> {
             Slide slide = findById(id);
-            if (slide != null && slide.getSongs() != null) {
+            if (slide != null && slide.getSongs() != null && userHasAccessToSlide(id)) {
                 slide.getSongs().removeIf(s -> songId.equals(s.getId()));
                 mongoTemplate.save(slide);
             }
         });
+        return 1;
     }
 
     public List<String> getSlideImagesForSong(String songId) {

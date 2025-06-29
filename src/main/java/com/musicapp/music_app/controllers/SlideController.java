@@ -125,8 +125,10 @@ public class SlideController {
     @DeleteMapping("/{slideId}")
     public ResponseEntity<String> deleteSlideById(@PathVariable("slideId") String slideId) {
         try {
-            slidesService.deleteSlideById(slideId);
-            return new ResponseEntity<>("Slide deleted successfully", HttpStatus.OK);
+            int i = slidesService.deleteSlideById(slideId);
+            if (i == 0) return new ResponseEntity<>("Slide not found", HttpStatus.NOT_FOUND);
+            if (i == 1) return new ResponseEntity<>("Slide deleted successfully", HttpStatus.OK);
+            return new ResponseEntity<>("Unauthorized", HttpStatus.UNAUTHORIZED);
 
         } catch (RuntimeException e) {
             String message = e.getMessage();
@@ -154,8 +156,9 @@ public class SlideController {
                 return new ResponseEntity<>("Slide ID list cannot be empty", HttpStatus.BAD_REQUEST);
             }
 
-            slidesService.removeSlidesFromSong(songId, slideIds);
-            return new ResponseEntity<>("Slides removed from song successfully", HttpStatus.OK);
+            int i = slidesService.removeSlidesFromSong(songId, slideIds);
+            if (i == 1) return new ResponseEntity<>("Slides removed from song successfully", HttpStatus.OK);
+            return new ResponseEntity<>("Unauthorized", HttpStatus.UNAUTHORIZED);
 
         } catch (Exception e) {
             System.out.println("Error removing slides from song: " + e.getMessage());
