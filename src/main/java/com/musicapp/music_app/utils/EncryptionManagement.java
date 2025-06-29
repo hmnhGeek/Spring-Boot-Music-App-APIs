@@ -176,4 +176,28 @@ public class EncryptionManagement {
     public static String decodeBase64(String encodedPassword) {
         return new String(Base64.getDecoder().decode(encodedPassword));
     }
+
+    public static String encryptText(String plainText, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] encryptedBytes = cipher.doFinal(plainText.getBytes());
+        return Base64.getEncoder().encodeToString(encryptedBytes);
+    }
+
+    public static String decryptText(String encryptedText, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedText));
+        return new String(decryptedBytes);
+    }
+
+    public static String encryptText(String plainText, String base64Key) throws Exception {
+        SecretKey key = getSecretKeyFromBase64(base64Key);
+        return encryptText(plainText, key);
+    }
+
+    public static String decryptText(String encryptedText, String base64Key) throws Exception {
+        SecretKey key = getSecretKeyFromBase64(base64Key);
+        return decryptText(encryptedText, key);
+    }
 }
