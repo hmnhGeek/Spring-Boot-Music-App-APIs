@@ -28,24 +28,18 @@ public class SlidesService {
     @Autowired
     private SongRepository songRepository;
 
-    public void addSlideByUrl(String url) {
-        try {
-            SecretKey secretKey = EncryptionManagement.generateEncryptionKey();
-            String base64Key = Base64.getEncoder().encodeToString(secretKey.getEncoded());
-            String encryptedUrl = EncryptionManagement.encryptText(url, secretKey);
-            Slide slide = new Slide();
-            slide.setUrl(encryptedUrl);
-            slide.setKey(base64Key);
-            mongoTemplate.insert(slide);
+    private boolean userHasAccessToSong(String songId) {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(userName);
 
-            // adding the slide into user's collection.
-            String userName = SecurityContextHolder.getContext().getAuthentication().getName();
-            User user = userRepository.findByUserName(userName);
-            user.getSlides().add(slide);
-            userRepository.save(user);
-        } catch (Exception e) {
-            throw new RuntimeException("Error encrypting slide URL", e);
+        if (user == null) {
+            throw new RuntimeException("User not found: " + userName);
         }
+
+        Optional<Song> optionalSong = songRepository.findById(songId);
+        if (optionalSong.isEmpty()) return false;
+        Song song = optionalSong.get();
+        return user.getSongs().contains(song);
     }
 
     public void addSlidesByUrls(List<String> urls) {
@@ -78,7 +72,6 @@ public class SlidesService {
         }
     }
 
-
     public void deleteSlideById(String slideId) {
         try {
             Slide slide = findById(slideId);
@@ -107,12 +100,55 @@ public class SlidesService {
         return mongoTemplate.findById(id, Slide.class);
     }
 
-    public void addSlidesToSong(String songId, List<String> slideIds) {
+    public int addNewSlidesToSong(String songId, List<String> urls) {
         Optional<Song> optionalSong = songRepository.findById(songId);
-        if (optionalSong.isEmpty()) return;
+        if (optionalSong.isEmpty()) {
+            return 0;
+        }
+
+        if (!userHasAccessToSong(songId)) {
+            return -1;
+        }
 
         Song song = optionalSong.get();
+        List<Slide> newSlides = new ArrayList<>();
 
+        try {
+            String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+            User user = userRepository.findByUserName(userName);
+            if (user == null) {
+                throw new RuntimeException("User not found: " + userName);
+            }
+
+            for (String url : urls) {
+                SecretKey secretKey = EncryptionManagement.generateEncryptionKey();
+                String base64Key = Base64.getEncoder().encodeToString(secretKey.getEncoded());
+                String encryptedUrl = EncryptionManagement.encryptText(url, secretKey);
+
+                Slide slide = new Slide();
+                slide.setUrl(encryptedUrl);
+                slide.setKey(base64Key);
+                slide.setSongs(new ArrayList<>(List.of(song)));
+
+                newSlides.add(slide);
+            }
+
+            mongoTemplate.insertAll(newSlides);
+            user.getSlides().addAll(newSlides);
+            userRepository.save(user);
+        } catch (Exception e) {
+            throw new RuntimeException("Error adding new slides to song", e);
+        }
+        return 1;
+    }
+
+    public int addExistingSlidesToSong(String songId, List<String> slideIds) {
+        Optional<Song> optionalSong = songRepository.findById(songId);
+        if (optionalSong.isEmpty()) return 0;
+        if (!userHasAccessToSong(songId)) {
+            return -1;
+        }
+        Song song = optionalSong.get();
         slideIds.forEach(id -> {
             Slide slide = findById(id);
             if (slide != null) {
@@ -129,6 +165,7 @@ public class SlidesService {
                 }
             }
         });
+        return 1;
     }
 
     public void removeSlidesFromSong(String songId, List<String> slideIds) {
@@ -145,6 +182,7 @@ public class SlidesService {
     }
 
     public List<String> getSlideImagesForSong(String songId) {
+        if (!userHasAccessToSong(songId)) return null;
         List<String> result = new ArrayList<>();
         List<Slide> allSlides = mongoTemplate.findAll(Slide.class);
         for (Slide slide : allSlides) {
@@ -165,4 +203,28 @@ public class SlidesService {
         }
         return result;
     }
+
+    public List<String> getDecryptedSlideUrlsForCurrentUser() {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserName(userName);
+
+        if (user == null) {
+            throw new RuntimeException("User not found: " + userName);
+        }
+
+        List<String> decryptedUrls = new ArrayList<>();
+        if (user.getSlides() != null) {
+            for (Slide slide : user.getSlides()) {
+                try {
+                    SecretKey key = EncryptionManagement.getSecretKeyFromBase64(slide.getKey());
+                    String decryptedUrl = EncryptionManagement.decryptText(slide.getUrl(), key);
+                    decryptedUrls.add(decryptedUrl);
+                } catch (Exception e) {
+                    System.out.println("Failed to decrypt slide URL for slide ID: " + slide.getId());
+                }
+            }
+        }
+        return decryptedUrls;
+    }
+
 }
