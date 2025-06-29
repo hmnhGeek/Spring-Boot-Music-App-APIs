@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -31,6 +32,7 @@ public class SlideController {
             if (response == null) {
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
+            Collections.shuffle(response);
             return ResponseEntity.ok().body(response);
         } catch (Exception e) {
             System.out.println(e.getMessage());

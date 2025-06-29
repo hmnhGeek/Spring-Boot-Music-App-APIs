@@ -12,10 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class SlidesService {
@@ -120,25 +117,47 @@ public class SlidesService {
                 throw new RuntimeException("User not found: " + userName);
             }
 
-            for (String url : urls) {
-                SecretKey secretKey = EncryptionManagement.generateEncryptionKey();
-                String base64Key = Base64.getEncoder().encodeToString(secretKey.getEncoded());
-                String encryptedUrl = EncryptionManagement.encryptText(url, secretKey);
-
-                Slide slide = new Slide();
-                slide.setUrl(encryptedUrl);
-                slide.setKey(base64Key);
-                slide.setSongs(new ArrayList<>(List.of(song)));
-
-                newSlides.add(slide);
+            // Step 1: Decrypt all existing user slide URLs
+            Set<String> decryptedExistingUrls = new HashSet<>();
+            if (user.getSlides() != null) {
+                for (Slide existingSlide : user.getSlides()) {
+                    try {
+                        SecretKey key = EncryptionManagement.getSecretKeyFromBase64(existingSlide.getKey());
+                        String decryptedUrl = EncryptionManagement.decryptText(existingSlide.getUrl(), key);
+                        decryptedExistingUrls.add(decryptedUrl);
+                    } catch (Exception e) {
+                        // Log and skip problematic decryption
+                        System.out.println("Skipping slide ID " + existingSlide.getId() + ": " + e.getMessage());
+                    }
+                }
             }
 
-            mongoTemplate.insertAll(newSlides);
-            user.getSlides().addAll(newSlides);
-            userRepository.save(user);
+            // Step 2: Only add new slides if URL is not already present
+            for (String url : urls) {
+                if (!decryptedExistingUrls.contains(url)) {
+                    SecretKey secretKey = EncryptionManagement.generateEncryptionKey();
+                    String base64Key = Base64.getEncoder().encodeToString(secretKey.getEncoded());
+                    String encryptedUrl = EncryptionManagement.encryptText(url, secretKey);
+
+                    Slide slide = new Slide();
+                    slide.setUrl(encryptedUrl);
+                    slide.setKey(base64Key);
+                    slide.setSongs(new ArrayList<>(List.of(song)));
+
+                    newSlides.add(slide);
+                }
+            }
+
+            if (!newSlides.isEmpty()) {
+                mongoTemplate.insertAll(newSlides);
+                user.getSlides().addAll(newSlides);
+                userRepository.save(user);
+            }
+
         } catch (Exception e) {
             throw new RuntimeException("Error adding new slides to song", e);
         }
+
         return 1;
     }
 
