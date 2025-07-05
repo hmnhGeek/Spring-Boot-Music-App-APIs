@@ -174,9 +174,9 @@ public class SlideController {
             @ApiResponse(responseCode = "500", description = "Internal server error while retrieving slides")
     })
     @GetMapping
-    public ResponseEntity<List<String>> getUserSlides() {
+    public ResponseEntity<List<SlideResponseDTO>> getUserSlides() {
         try {
-            List<String> decryptedUrls = slidesService.getDecryptedSlideUrlsForCurrentUser();
+            List<SlideResponseDTO> decryptedUrls = slidesService.getDecryptedSlideUrlsForCurrentUser();
             return ResponseEntity.ok(decryptedUrls);
         } catch (RuntimeException e) {
             if (e.getMessage().contains("User not found")) {

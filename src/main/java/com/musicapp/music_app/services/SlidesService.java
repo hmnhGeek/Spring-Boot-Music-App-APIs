@@ -237,7 +237,7 @@ public class SlidesService {
         return result;
     }
 
-    public List<String> getDecryptedSlideUrlsForCurrentUser() {
+    public List<SlideResponseDTO> getDecryptedSlideUrlsForCurrentUser() {
         String userName = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUserName(userName);
 
@@ -245,13 +245,16 @@ public class SlidesService {
             throw new RuntimeException("User not found: " + userName);
         }
 
-        List<String> decryptedUrls = new ArrayList<>();
+        List<SlideResponseDTO> decryptedUrls = new ArrayList<>();
         if (user.getSlides() != null) {
             for (Slide slide : user.getSlides()) {
                 try {
                     SecretKey key = EncryptionManagement.getSecretKeyFromBase64(slide.getKey());
                     String decryptedUrl = EncryptionManagement.decryptText(slide.getUrl(), key);
-                    decryptedUrls.add(decryptedUrl);
+                    SlideResponseDTO slideResponseDTO = new SlideResponseDTO();
+                    slideResponseDTO.setId(slide.getId());
+                    slideResponseDTO.setUrl(decryptedUrl);
+                    decryptedUrls.add(slideResponseDTO);
                 } catch (Exception e) {
                     System.out.println("Failed to decrypt slide URL for slide ID: " + slide.getId());
                 }
