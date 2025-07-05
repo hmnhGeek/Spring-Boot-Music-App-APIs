@@ -1,5 +1,6 @@
 package com.musicapp.music_app.controllers;
 
+import com.musicapp.music_app.DTO.Response.Slides.SlideResponseDTO;
 import com.musicapp.music_app.services.SlidesService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,9 +27,9 @@ public class SlideController {
             @ApiResponse(responseCode = "500", description = "Internal server error while fetching slides list")
     })
     @GetMapping(value = "/{songId}")
-    public ResponseEntity<List<String>> getSlidesForSong(@PathVariable("songId") String songId) {
+    public ResponseEntity<List<SlideResponseDTO>> getSlidesForSong(@PathVariable("songId") String songId) {
         try {
-            List<String> response = slidesService.getSlideImagesForSong(songId);
+            List<SlideResponseDTO> response = slidesService.getSlideImagesForSong(songId);
             if (response == null) {
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }

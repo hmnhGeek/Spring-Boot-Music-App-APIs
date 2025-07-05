@@ -1,5 +1,6 @@
 package com.musicapp.music_app.services;
 
+import com.musicapp.music_app.DTO.Response.Slides.SlideResponseDTO;
 import com.musicapp.music_app.model.Slide;
 import com.musicapp.music_app.model.Song;
 import com.musicapp.music_app.model.User;
@@ -210,9 +211,9 @@ public class SlidesService {
         return 1;
     }
 
-    public List<String> getSlideImagesForSong(String songId) {
+    public List<SlideResponseDTO> getSlideImagesForSong(String songId) {
         if (!userHasAccessToSong(songId)) return null;
-        List<String> result = new ArrayList<>();
+        List<SlideResponseDTO> result = new ArrayList<>();
         List<Slide> allSlides = mongoTemplate.findAll(Slide.class);
         for (Slide slide : allSlides) {
             List<Song> songs = slide.getSongs();
@@ -221,7 +222,10 @@ public class SlidesService {
                     if (song != null && songId.equals(song.getId())) {
                         try {
                             String decryptedUrl = EncryptionManagement.decryptText(slide.getUrl(), slide.getKey());
-                            result.add(decryptedUrl);
+                            SlideResponseDTO slideResponseDTO = new SlideResponseDTO();
+                            slideResponseDTO.setId(slide.getId());
+                            slideResponseDTO.setUrl(decryptedUrl);
+                            result.add(slideResponseDTO);
                             break; // found the song in this slide, no need to check further
                         } catch (Exception e) {
                             throw new RuntimeException("Failed to decrypt slide URL", e);
