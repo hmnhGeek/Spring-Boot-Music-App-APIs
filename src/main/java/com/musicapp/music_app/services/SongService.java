@@ -10,6 +10,7 @@ import com.musicapp.music_app.repositories.SongRepository;
 import com.musicapp.music_app.repositories.UserRepository;
 import com.musicapp.music_app.utils.EncryptionManagement;
 import com.musicapp.music_app.utils.FileManagementUtility;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class SongService {
     @Autowired
@@ -42,6 +44,9 @@ public class SongService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RedisService redisService;
 
     private static final String MUSIC_FOLDER = "music";
     private static final String COVERS_FOLDER = "covers";
@@ -128,6 +133,17 @@ public class SongService {
             return null; // Return null if the song is not found
         }
 
+        ByteArrayResource coverImageFromRedis = redisService.getByteArrayResource(songId);
+        String filenameFromRedis = redisService.get(songId + "filename", String.class);
+        if (coverImageFromRedis != null) {
+            log.info("SongService::getDecryptedSongCoverById: Found cover image in redis for song ID = {}", songId);
+            HashMap<String, Object> map = new HashMap<>();
+            map.put("filename", filenameFromRedis);
+            map.put("file", coverImageFromRedis);
+            return map;
+        }
+
+        log.info("SongService::getDecryptedSongCoverById: Cache miss, extracting cover image for song ID = {}", songId);
         Song song = songs.get(0);
 
         // Decode the encryption key
@@ -148,6 +164,10 @@ public class SongService {
         HashMap<String, Object> map = new HashMap<>();
         map.put("filename", decryptedFilename);
         map.put("file", resource);
+
+        redisService.setByteArrayResource(songId, resource, 300l);
+        redisService.set(songId + "filename", decryptedFilename, 300l);
+
         return map;
     }
 
